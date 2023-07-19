@@ -5,24 +5,16 @@ Check the doc at mase-tools/docs/large_language_models/accelerate_fsdp.md
 import os
 import sys
 
-os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
-sys.path.append(
-    os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "..", "machop"
-    )
-)
-
-from chop.actions.accelerate_train import train
-from chop.dataset import MyDataModule
+from accelerate_train import train
+from data_module import MyDataModule
 
 # from chop.models.manual.llama_plain.modeling_llama import LlamaForCausalLM
-# from transformers.models.llama import LlamaTokenizer
-from chop.models.manual.opt_plain.modeling_opt import OPTForCausalLM
-from transformers import AutoTokenizer
+from transformers.models.llama import LlamaTokenizer
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 
 def main():
-    model_name = "facebook/opt-350m"
+    model_name = "Cheng98/llama-160m"
     task = "lm"
     dataset_name = "wikitext2"
     max_token_len = 128
@@ -44,7 +36,7 @@ def main():
     load_name: str = None
     load_type: str = ""
 
-    model = OPTForCausalLM.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     data_module = MyDataModule(

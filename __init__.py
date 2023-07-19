@@ -1,8 +1,11 @@
 from accelerate import init_empty_weights, init_on_device
 from transformers import AutoTokenizer
 
-from .configuration_llama import LlamaConfig
-from .modeling_llama import (
+import sys
+sys.path.append("configuration_llama")
+
+from configuration_llama import LlamaConfig
+from modeling_llama import (
     LlamaForCausalLM,
     LlamaForSequenceClassification,
 )
@@ -30,7 +33,7 @@ def get_llama_plain(
 ):
     # TODO: support cls tasks
     if task not in ["language_modeling", "lm"]:
-        raise ValueError(f"Task {task} is not supported for Quantized Llama")
+        raise ValueError(f"Task {task} is not supported for Llama")
 
     match task:
         case "language_modeling" | "lm":

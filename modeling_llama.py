@@ -42,7 +42,7 @@ from transformers.utils import (
     replace_return_docstrings,
 )
 
-from .configuration_llama import LlamaConfig
+from configuration_llama import LlamaConfig
 from transformers.models.llama import LlamaTokenizer
 
 logger = logging.get_logger(__name__)
@@ -174,6 +174,7 @@ class LlamaRotaryEmbedding(torch.nn.Module):
         )
 
 
+# Why are the two functions below defined outside any class, and why do we have a function that applies rotary embeddings and a Layer that does this?
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]  # [bs, nh, t, hd/2]
@@ -217,6 +218,7 @@ class LlamaAttention(nn.Module):
     def __init__(self, config: LlamaConfig, layer_id: int = 0):
         super().__init__()
         self.config = config
+        self.layer_id = layer_id
         self.hidden_size = config.hidden_size
         self.num_heads = config.num_attention_heads
         self.head_dim = self.hidden_size // self.num_heads

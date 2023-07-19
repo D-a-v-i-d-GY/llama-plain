@@ -1,10 +1,12 @@
 import logging
 import os
 
-from .nlp import dataset_factory as nlp_dataset_factory
-from .toy_dataset import ToyDataset
-from .vision import build_dataset
-from .vision import info as vision_dataset_info
+from nlp__init__ import dataset_factory as nlp_dataset_factory
+from toy_dataset import ToyDataset
+
+# The imports below (and all the commented code) were in the original code, but are not required for the current task
+#from vision__init__ import build_dataset
+#from vision__init__ import info as vision_dataset_info
 
 logger = logging.getLogger(__name__)
 
@@ -15,18 +17,18 @@ def get_dataset(model_name, dataset_name, **kwargs):
         val_dataset = ToyDataset(split="validation")
         test_dataset = ToyDataset(split="test")
         pred_dataset = None
-    elif dataset_name in ["cifar10", "cifar100", "imagenet"]:
-        path = os.path.abspath(f"./data/{dataset_name}")
-        train_dataset, _ = build_dataset(
-            dataset_name=dataset_name, model_name=model_name, path=path, train=True
-        )
-        val_dataset, _ = build_dataset(
-            dataset_name=dataset_name, model_name=model_name, path=path, train=False
-        )
-        test_dataset, _ = build_dataset(
-            dataset_name=dataset_name, model_name=model_name, path=path, train=False
-        )
-        pred_dataset = None
+    #elif dataset_name in ["cifar10", "cifar100", "imagenet"]:
+    #    path = os.path.abspath(f"./data/{dataset_name}")
+    #    train_dataset, _ = build_dataset(
+    #        dataset_name=dataset_name, model_name=model_name, path=path, train=True
+    #    )
+    #    val_dataset, _ = build_dataset(
+    #        dataset_name=dataset_name, model_name=model_name, path=path, train=False
+    #    )
+    #    test_dataset, _ = build_dataset(
+    #        dataset_name=dataset_name, model_name=model_name, path=path, train=False
+    #    )
+    #    pred_dataset = None
     elif dataset_name in nlp_dataset_factory:
         # get dataset cls
         dataset_cls = nlp_dataset_factory[dataset_name]
@@ -127,8 +129,8 @@ def get_dataset(model_name, dataset_name, **kwargs):
 def get_dataset_info(name):
     if name in ["toy-tiny", "toy_tiny"]:
         info = {"num_classes": 2, "image_size": (1, 2, 2)}
-    elif name in ["cifar10", "cifar100", "imagenet"]:
-        info = vision_dataset_info[name]
+    # elif name in ["cifar10", "cifar100", "imagenet"]:
+    #    info = vision_dataset_info[name]
     elif name in nlp_dataset_factory:
         # get dataset cls
         dataset_cls = nlp_dataset_factory[name]

@@ -3,8 +3,8 @@ import logging
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
-from .nlp import dataset_factory as nlp_dataset_factory
-from .utils import get_dataset
+from nlp__init__ import dataset_factory as nlp_dataset_factory
+from utils import get_dataset
 
 logger = logging.getLogger(__name__)
 
