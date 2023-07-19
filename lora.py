@@ -2,7 +2,7 @@ import torch
 import os
 
 # Load model directly
-from transformers.models.llama import LlamaTokenizer
+from transformers.models.llama import LlamaTokenizerFast
 from transformers import AutoModelForCausalLM
 import transformers
 from peft import get_peft_config, PeftModel, PeftConfig, get_peft_model, LoraConfig, TaskType
@@ -45,7 +45,7 @@ def main():
     )
 
     gpu = torch.device("cuda:0")
-    tokenizer = LlamaTokenizer.from_pretrained("decapoda-research/llama-7b-hf")
+    tokenizer = LlamaTokenizerFast.from_pretrained("decapoda-research/llama-7b-hf")
     model = AutoModelForCausalLM.from_pretrained(model_name)
     model = get_peft_model(model, peft_config).to(gpu)
     model.print_trainable_parameters()
