@@ -4,6 +4,7 @@ import os
 # Load model directly
 from transformers.models.llama import LlamaTokenizer
 from transformers import AutoModelForCausalLM
+import transformers
 from peft import get_peft_config, PeftModel, PeftConfig, get_peft_model, LoraConfig, TaskType
 from data_module import MyDataModule
 from accelerate_train import train
@@ -34,7 +35,13 @@ def main():
     load_type: str = ""
 
     peft_config = LoraConfig(
-        task_type=TaskType.CAUSAL_LM, inference_mode=False, r=16, lora_alpha=16, lora_dropout=0.1, bias="lora_only"
+        task_type=TaskType.CAUSAL_LM,
+        target_modules=["q_proj", "v_proj"],
+        inference_mode=False, 
+        r=8, 
+        lora_alpha=16, 
+        lora_dropout=0.1, 
+        bias="none"
     )
 
     gpu = torch.device("cuda:0")
@@ -52,7 +59,31 @@ def main():
         max_token_len=max_token_len,
     )
 
-    train(
+    data_module.prepare_data()
+    data_module.setup()
+    train_data = data_module.train_dataloader()
+    trainer = transformers.Trainer(
+        model=model,
+        train_dataset=train_data,
+        args=transformers.TrainingArguments(
+            per_device_train_batch_size=4,
+            gradient_accumulation_steps=4,
+            warmup_steps=10,
+            max_steps=10,
+            learning_rate=learning_rate,
+            fp16=True,
+            logging_steps=1,
+            output_dir="outputs"
+        ),
+        data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False)
+    )
+
+    model.config.use_cache=False
+    trainer.train()
+
+
+
+'''    train(
         model=model,
         task=task,
         data_module=data_module,
@@ -67,7 +98,7 @@ def main():
         save_path=save_path,
         load_name=load_name,
         load_type=load_type,
-    )
+    )'''
 
 
 if __name__ == "__main__":
