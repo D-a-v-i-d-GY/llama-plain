@@ -9,7 +9,6 @@ from accelerate_train import train
 from data_module import MyDataModule
 
 # from chop.models.manual.llama_plain.modeling_llama import LlamaForCausalLM
-from transformers.models.llama import LlamaTokenizer
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 
