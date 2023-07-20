@@ -61,7 +61,7 @@ def main():
 
     data_module.prepare_data()
     data_module.setup()
-    train_data = data_module.train_dataloader()
+    train_data = data_module.train_dataset
     trainer = transformers.Trainer(
         model=model,
         train_dataset=train_data,
