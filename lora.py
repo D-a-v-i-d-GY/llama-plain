@@ -17,7 +17,7 @@ def main():
     dataset_name = "wikitext2"
     max_token_len = 128
     batch_size = 1
-    num_workers = os.cpu_count()
+    num_workers = 0
     optimizer = "adamw"
     max_epochs: int = 1
     max_steps: int = 1
@@ -76,6 +76,7 @@ def main():
             logging_steps=1,
             output_dir="outputs",
             weight_decay=weight_decay,
+            dataloader_pin_memory=True,
         ),
         data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
