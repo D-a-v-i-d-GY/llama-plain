@@ -46,6 +46,7 @@ def main():
 
     gpu = torch.device("cuda:0")
     tokenizer = LlamaTokenizerFast.from_pretrained("decapoda-research/llama-7b-hf")
+    tokenizer.add_special_tokens({"pad_token":"<PAD>"})
     model = AutoModelForCausalLM.from_pretrained(model_name)
     model = get_peft_model(model, peft_config).to(gpu)
     model.print_trainable_parameters()
