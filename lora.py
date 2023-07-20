@@ -48,7 +48,7 @@ def main():
     tokenizer = LlamaTokenizerFast.from_pretrained("decapoda-research/llama-7b-hf")
     tokenizer.add_special_tokens({"pad_token":"<PAD>"})
     model = AutoModelForCausalLM.from_pretrained(model_name)
-    model = get_peft_model(model, peft_config).to(gpu)
+    model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
     data_module = MyDataModule(
@@ -68,20 +68,21 @@ def main():
         train_dataset=train_data,
         args=transformers.TrainingArguments(
             per_device_train_batch_size=4,
-            gradient_accumulation_steps=4,
-            warmup_steps=10,
-            max_steps=10,
+            gradient_accumulation_steps=gradient_accumulation_steps,
+            warmup_steps=num_warmup_steps,
+            max_steps=max_steps,
             learning_rate=learning_rate,
             fp16=True,
             logging_steps=1,
-            output_dir="outputs"
+            output_dir="outputs",
+            weight_decay=weight_decay,
         ),
-        data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False)
+        data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
+
 
     model.config.use_cache=False
     trainer.train()
-
 
 
 '''    train(
