@@ -40,7 +40,7 @@ def main():
         torch_dtype=torch.float16,
         device_map="auto",
     )
-    tokenizer = LlamaTokenizerFast.from_pretrained("decapoda-research/llama-7b-hf")
+    tokenizer = LlamaTokenizerFast.from_pretrained("huggyllama/llama-7b")
     tokenizer.add_special_tokens({"pad_token":"<PAD>"})
 
     peft_config = LoraConfig(
@@ -55,7 +55,8 @@ def main():
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-    train_data = load_dataset("wikipedia", "20220301.en")
+    train_data = load_dataset("wikipedia", "20220301.en", streaming=True, split="train")
+    train_data = train_data.shuffle(seed=42, buffer_size=100000)
 
     trainer = transformers.Trainer(
         model=model,
