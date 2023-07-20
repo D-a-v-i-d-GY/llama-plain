@@ -60,7 +60,7 @@ def main():
 
     trainer = transformers.Trainer(
         model=model,
-        train_dataset=train_data["train"],
+        train_dataset=train_data,
         args=transformers.TrainingArguments(
             per_device_train_batch_size=4,
             gradient_accumulation_steps=gradient_accumulation_steps,
