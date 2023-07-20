@@ -55,7 +55,7 @@ def main():
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-    train_data = load_dataset("wikipedia")
+    train_data = load_dataset("wikipedia", "20220301.en")
 
     trainer = transformers.Trainer(
         model=model,
