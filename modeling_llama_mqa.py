@@ -212,8 +212,8 @@ class LlamaMLP(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
 
 
-class LlamaAttention(nn.Module):
-    """Multi-headed attention from 'Attention Is All You Need' paper"""
+class LlamaMQAttention(nn.Module):
+    """Multi-Query attention from 'One Write-Head is all you need - Shazeer' paper"""
 
     def __init__(self, config: LlamaConfig, layer_id: int = 0):
         super().__init__()
@@ -231,8 +231,8 @@ class LlamaAttention(nn.Module):
             )
         # fmt: off
         self.q_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
-        self.k_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
-        self.v_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
+        self.k_proj = nn.Linear(self.hidden_size, self.head_dim, bias=False)
+        self.v_proj = nn.Linear(self.hidden_size, self.head_dim, bias=False)
         self.o_proj = nn.Linear(self.num_heads * self.head_dim, self.hidden_size, bias=False)
         # fmt: on
         self.rotary_emb = LlamaRotaryEmbedding(
@@ -264,12 +264,12 @@ class LlamaAttention(nn.Module):
         )  # [bs, num_heads, q_len, head_dim]
         key_states = (
             self.k_proj(hidden_states)
-            .view(bsz, q_len, self.num_heads, self.head_dim)
+            .view(bsz, q_len, 1, self.head_dim) # only calculates a single head
             .transpose(1, 2)
         )
         value_states = (
             self.v_proj(hidden_states)
-            .view(bsz, q_len, self.num_heads, self.head_dim)
+            .view(bsz, q_len, 1, self.head_dim) # only calculates a single head
             .transpose(1, 2)
         )
 
@@ -288,6 +288,9 @@ class LlamaAttention(nn.Module):
             value_states = torch.cat([past_key_value[1], value_states], dim=2)
 
         past_key_value = (key_states, value_states) if use_cache else None
+        
+        key_states = key_states.expand(bsz, self.num_heads, q_len, self.head_dim) # Copy the Key heads after being cached
+        value_states = value_states.expand(bsz, self.num_heads, q_len, self.head_dim) # Copy the Value heads after being cached
 
         attn_weights = torch.matmul(
             query_states, key_states.transpose(2, 3)
@@ -341,7 +344,7 @@ class LlamaDecoderLayer(nn.Module):
     def __init__(self, config: LlamaConfig, layer_id: int = 0):
         super().__init__()
         self.hidden_size = config.hidden_size
-        self.self_attn = LlamaAttention(config=config, layer_id=layer_id)
+        self.self_attn = LlamaMQAttention(config=config, layer_id=layer_id)
         self.mlp = LlamaMLP(
             hidden_size=self.hidden_size,
             intermediate_size=config.intermediate_size,
