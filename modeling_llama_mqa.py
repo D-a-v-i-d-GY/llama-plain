@@ -265,11 +265,13 @@ class LlamaMQAttention(nn.Module):
         key_states = (
             self.k_proj(hidden_states)
             .view(bsz, q_len, 1, self.head_dim) # only calculates a single head
+            .expand(bsz, q_len, self.num_heads, self.head_dim) # Copy the Key heads before being cached
             .transpose(1, 2)
         )
         value_states = (
             self.v_proj(hidden_states)
             .view(bsz, q_len, 1, self.head_dim) # only calculates a single head
+            .expand(bsz, q_len, self.num_heads, self.head_dim) # Copy the Value heads before being cached
             .transpose(1, 2)
         )
 
@@ -288,10 +290,7 @@ class LlamaMQAttention(nn.Module):
             value_states = torch.cat([past_key_value[1], value_states], dim=2)
 
         past_key_value = (key_states, value_states) if use_cache else None
-        
-        key_states = key_states.expand(bsz, self.num_heads, q_len, self.head_dim) # Copy the Key heads after being cached
-        value_states = value_states.expand(bsz, self.num_heads, q_len, self.head_dim) # Copy the Value heads after being cached
-
+    
         attn_weights = torch.matmul(
             query_states, key_states.transpose(2, 3)
         ) / math.sqrt(self.head_dim)
