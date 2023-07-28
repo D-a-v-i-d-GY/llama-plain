@@ -277,7 +277,7 @@ class LlamaMQAttention(nn.Module):
 
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
-            kv_seq_len += past_key_value[0].shape[-2]
+            kv_seq_len += past_key_value[0].shape[-2] # need to know the number of input tokens for positional encoding
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
         # CZ?: check if quantisation is needed here
         query_states, key_states = apply_rotary_pos_emb(
@@ -286,13 +286,14 @@ class LlamaMQAttention(nn.Module):
 
         if past_key_value is not None:
             # reuse k, v, self_attention
-            key_states = torch.cat([past_key_value[0], key_states], dim=2)
+            # Cached kv values are already position embedded
+            key_states = torch.cat([past_key_value[0], key_states], dim=2) 
             value_states = torch.cat([past_key_value[1], value_states], dim=2)
 
         past_key_value = (key_states, value_states) if use_cache else None
     
         attn_weights = torch.matmul(
-            query_states, key_states.transpose(2, 3)
+            query_states, key_states.transpose(2, 3) # query_states: [bsz, num_heads, q_len, dim_head], key_states: [bsz, num_heads, dim_head, kv_seq_len]
         ) / math.sqrt(self.head_dim)
 
         if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
