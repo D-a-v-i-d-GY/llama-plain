@@ -57,12 +57,13 @@ if __name__=="__main__":
         return y, new_K, new_V
 
 
-def mha2mqa(state_dict, num_layers: int, num_heads: int):
+def mha2mqa(state_dict, num_layers: int, num_heads: int, transpose_layer=True):
     warnings.warn("Need to manually set the layer name if model is changed! Default is llama-160m")
 
     for layer_id in range(num_layers):
         layer_name = f'model.layers.{layer_id}.self_attn.k_proj.weight' # name of the attention layer projection matrices
-        layer = state_dict[layer_name].transpose(0, 1)
+        layer = state_dict[layer_name]
+        if transpose_layer: layer = layer.transpose(0, 1)
         size = layer.size()
         layer = layer.reshape(num_heads, size[1], -1)
         layer = torch.mean(layer, dim=0)
@@ -70,7 +71,8 @@ def mha2mqa(state_dict, num_layers: int, num_heads: int):
 
     for layer_id in range(num_layers):
         layer_name = f'model.layers.{layer_id}.self_attn.v_proj.weight' # name of the attention layer projection matrices
-        layer = state_dict[layer_name].transpose(0, 1)
+        layer = state_dict[layer_name]
+        if transpose_layer: layer = layer.transpose(0, 1)
         size = layer.size()
         layer = layer.reshape(num_heads, size[1], -1)
         layer = torch.mean(layer, dim=0)
