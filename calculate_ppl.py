@@ -7,7 +7,7 @@ import modeling_llama_mqa
 from mqa import mha2mqa
 
 
-def calculate_ppl(model, encodings, device, stride=512, max_length=1024):
+def calculate_ppl(model, encodings, device, stride=1024, max_length=1024):
     seq_len = encodings.input_ids.size(1)
 
     nlls = []
@@ -46,7 +46,7 @@ my_mqa_model = modeling_llama_mqa.LlamaForCausalLM(model.config)
 my_mqa_model_random = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
 
 state = model.state_dict()
-state = mha2mqa(state, num_layers=12, num_heads=12, transpose_layer=False)
+state = mha2mqa(state, num_layers=12, num_heads=12, transpose_layer=True)
 
 my_mqa_model.load_state_dict(state)
 my_mqa_model.to(device)
@@ -60,8 +60,8 @@ with torch.inference_mode():
     my_mqa_model_random.eval()
     ppl = calculate_ppl(model, encodings, device)
     ppl_mqa = calculate_ppl(my_mqa_model, encodings, device)
-    #ppl_mqa_random = calculate_ppl(my_mqa_model_random, encodings, device)
+    ppl_mqa_random = calculate_ppl(my_mqa_model_random, encodings, device)
 
 print("base: ", ppl)
 print("averaged: ", ppl_mqa)
-#print("random: ", ppl_mqa_random)
+print("random: ", ppl_mqa_random)
