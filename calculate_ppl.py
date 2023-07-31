@@ -40,28 +40,37 @@ def calculate_ppl(model, encodings, device, stride=1024, max_length=1024):
 device = 'cuda'
 model_name = "Cheng98/llama-160m"
 
-model = LlamaForCausalLM.from_pretrained(model_name)
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
-my_mqa_model = modeling_llama_mqa.LlamaForCausalLM(model.config)
+
+model = LlamaForCausalLM.from_pretrained(model_name).to(device)
+my_model = LlamaForCausalLM(model.config).to(device)
+my_model_random = LlamaForCausalLM(model.config).to(device)
+my_mqa_model = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
 my_mqa_model_random = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
 
 state = model.state_dict()
-state = mha2mqa(state, num_layers=12, num_heads=12, transpose_layer=True)
+my_model.load_state_dict(state)
 
+state = mha2mqa(state, num_layers=12, num_heads=12, transpose_layer=True)
 my_mqa_model.load_state_dict(state)
-my_mqa_model.to(device)
 
 test = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
 encodings = tokenizer("\n\n".join(test["text"]), return_tensors="pt").to(device)
 
-model = model.to(device)
 with torch.inference_mode():
+    model.eval()
+    my_model.eval()
+    my_model_random.eval()
     my_mqa_model.eval()
     my_mqa_model_random.eval()
     ppl = calculate_ppl(model, encodings, device)
+    ppl_ = calculate_ppl(my_model, encodings, device)
+    ppl_random = calculate_ppl(my_model_random, encodings, device)
     ppl_mqa = calculate_ppl(my_mqa_model, encodings, device)
     ppl_mqa_random = calculate_ppl(my_mqa_model_random, encodings, device)
 
 print("base: ", ppl)
-print("averaged: ", ppl_mqa)
-print("random: ", ppl_mqa_random)
+print("base model, loaded weights: ", ppl_)
+print("base model, random weights: ", ppl_random)
+print("MHA -> MQA, transformed weights: ", ppl_mqa)
+print("MHA -> MQA, random weights: ", ppl_mqa_random)
