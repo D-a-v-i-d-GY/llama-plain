@@ -7,7 +7,7 @@ import modeling_llama_mqa
 from mqa import mha2mqa
 
 
-def calculate_ppl(model, encodings, device, stride=1024, max_length=1024):
+def calculate_ppl(model, encodings, device, stride=512, max_length=1024):
     seq_len = encodings.input_ids.size(1)
 
     nlls = []
