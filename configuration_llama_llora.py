@@ -23,7 +23,7 @@ from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import logging
 import toml
 
-from .lora_config_llama import parse_llama_lora_config
+from lora_config_llama import parse_llama_lora_config
 
 logger = logging.get_logger(__name__)
 

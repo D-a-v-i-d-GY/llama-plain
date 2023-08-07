@@ -43,8 +43,8 @@ from transformers.utils import (
     replace_return_docstrings,
 )
 
-from .configuration_llama_llora import LlamaLoraConfig
-from ..lora_modules import LoraLayer, LinearLora
+from configuration_llama_llora import LlamaLoraConfig
+from lora_modules import LoraLayer, LinearLora
 
 logger = logging.get_logger(__name__)
 
