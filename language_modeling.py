@@ -189,7 +189,7 @@ class LanguageModelingDatasetWikitext2(LanguageModeling):
             raw_dataset = load_dataset(
                 "wikitext",
                 "wikitext-2-raw-v1",
-                cache_dir=os.path.abspath("./cache/dataset_cache_dir"),
+                #cache_dir=os.path.abspath("./cache/dataset_cache_dir"),
             )
             raw_dataset.save_to_disk(self.raw_path)
         else:
@@ -229,7 +229,7 @@ class LanguageModelingDatasetWikiText103(LanguageModeling):
             raw_dataset = load_dataset(
                 "wikitext",
                 "wikitext-103-raw-v1",
-                cache_dir=os.path.abspath("./cache/dataset_cache_dir"),
+                #cache_dir=os.path.abspath("./cache/dataset_cache_dir"),
             )
             raw_dataset.save_to_disk(self.raw_path)
         else:
@@ -264,7 +264,7 @@ class LanguageModelingDatasetC4(LanguageModeling):
             raw_dataset = load_dataset(
                 "c4",
                 "en",
-                cache_dir=os.path.abspath("./cache/dataset_cache_dir"),
+                #cache_dir=os.path.abspath("./cache/dataset_cache_dir"),
             )
             raw_dataset.save_to_disk(self.raw_path)
         else:
@@ -301,7 +301,7 @@ class LanguageModelingDatasetPTB(LanguageModeling):
             print("Downloading and processing raw dataset...")
             raw_dataset = load_dataset(
                 "ptb_text_only",
-                cache_dir=os.path.abspath("./cache/dataset_cache_dir"),
+                #cache_dir=os.path.abspath("./cache/dataset_cache_dir"),
             )
             raw_dataset.save_to_disk(self.raw_path)
         else:
