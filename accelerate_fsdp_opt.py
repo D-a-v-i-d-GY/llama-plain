@@ -9,7 +9,7 @@ from accelerate_train import train
 from data_module import MyDataModule
 
 # from chop.models.manual.llama_plain.modeling_llama import LlamaForCausalLM
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers.models.llama import LlamaTokenizer, LlamaForCausalLM
 
 
 def main():
@@ -35,8 +35,8 @@ def main():
     load_name: str = None
     load_type: str = ""
 
-    model = AutoModelForCausalLM.from_pretrained(model_name)
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = LlamaForCausalLM.from_pretrained(model_name)
+    tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
     data_module = MyDataModule(
         model_name=None,
