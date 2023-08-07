@@ -33,7 +33,7 @@ def main():
     num_workers = os.cpu_count()
     optimizer = "adamw"
     max_epochs: int = 1
-    max_steps: int = 0
+    max_steps: int = 22328 # num of steps per epoch
     gradient_accumulation_steps: int = 1
     # Reduced for unit test
     # max_epochs: int = 2
