@@ -193,6 +193,17 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids):
     return q_embed, k_embed
 
 
+def group_expand(key_states, layer_groups, num_groups, tgt_size):
+    key_states_expanded = torch.zeros(tgt_size[0], tgt_size[2], tgt_size[1], tgt_size[3])
+    for i in range(num_groups):
+        key_states_expanded[:, :, layer_groups[i], :] = key_states[:, :, i:i+1, :].expand(tgt_size[0], tgt_size[2], len(layer_groups[i]), tgt_size[-1])
+    return key_states_expanded.transpose(1, 2)
+
+
+def list_numel(your_list):
+    return sum([len(sub_list) for sub_list in your_list])
+
+
 class LlamaMLP(nn.Module):
     def __init__(
         self,
@@ -224,18 +235,21 @@ class LlamaGQAttention(nn.Module):
         self.head_dim = self.hidden_size // self.num_heads
         self.max_position_embeddings = config.max_position_embeddings
         # GQA attr
-        self.num_groups = config.num_groups
-        self.group_size = self.num_heads // self.num_groups
+        # Consider making a sparse 2D matrix of shape [num_head, num_heads], 
+        # with most entries zero, and if an entry at [i, j] is one, then 
+        # j-th head is in i-th group
+        self.layer_groups = config.groups_idx[layer_id] # groups_idx has to have the shape: [num_layers, {num_groups, len_grop} <- not fixed]
+        self.num_groups = len(self.layer_groups)
 
         if (self.head_dim * self.num_heads) != self.hidden_size:
             raise ValueError(
                 f"hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}"
                 f" and `num_heads`: {self.num_heads})."
             )
-        if (self.group_size * self.num_groups) != self.num_heads:
+        if list_numel(self.layer_groups) != self.num_heads:
             raise ValueError(
-                f"num_heads must be divisible by num_groups (got `num_heads`: {self.num_heads}"
-                f" and `num_groups`: {self.num_groups})."
+                f"total number of heads in the groups must sum to {self.num_heads}"
+                f" but it is : {torch.numel(self.layer_groups)})."
             )
         # fmt: off
         self.q_proj = nn.Linear(self.hidden_size, self.num_heads  * self.head_dim, bias=False)
@@ -273,15 +287,13 @@ class LlamaGQAttention(nn.Module):
         key_states = (
             self.k_proj(hidden_states)
             .view(bsz, q_len, self.num_groups, self.head_dim) # only calculates a single head
-            .expand(bsz, q_len, self.num_heads, self.head_dim) # Copy the Key heads before being cached
-            .transpose(1, 2)
         )
+        key_states = group_expand(key_states, self.layer_groups, self.num_groups, query_states.size())
         value_states = (
             self.v_proj(hidden_states)
             .view(bsz, q_len, self.num_groups, self.head_dim) # only calculates a single head
-            .expand(bsz, q_len, self.num_heads, self.head_dim) # Copy the Value heads before being cached
-            .transpose(1, 2)
         )
+        value_states = group_expand(value_states, self.layer_groups, self.num_groups, query_states.size())
 
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
@@ -548,6 +560,11 @@ class LlamaModel(LlamaPreTrainedModel):
         self.embed_tokens = nn.Embedding(
             config.vocab_size, config.hidden_size, self.padding_idx
         )
+        if len(config.group_idx) != config.num_hidden_layers:
+            raise ValueError(
+                f"The number of group descriptions provided : {len(config.group_idx)}"
+                f"is not equal to the number of layers : {config.num_hidden_layers}"
+            )
         self.layers = nn.ModuleList(
             [LlamaDecoderLayer(config, i) for i in range(config.num_hidden_layers)]
         )
