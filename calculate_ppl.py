@@ -42,13 +42,13 @@ device = 'cuda'
 model_name = "Cheng98/llama-160m"
 torch.manual_seed(42)
 
-groups_idx = [[[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]] * 12
+groups_idx = [[[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]]] * 12
 
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
 model = LlamaForCausalLM.from_pretrained(model_name).to(device)
 #my_model = LlamaForCausalLM(model.config).to(device)
-#my_model_random = LlamaForCausalLM(model.config).to(device)
+my_model_random = LlamaForCausalLM(model.config).to(device)
 #my_mqa_model = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
 #my_mqa_model_random = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
 model.config.groups_idx = groups_idx
@@ -69,23 +69,23 @@ encodings = tokenizer("\n\n".join(test["text"]), return_tensors="pt").to(device)
 with torch.inference_mode():
     model.eval()
 #    my_model.eval()
-#    my_model_random.eval()
+    my_model_random.eval()
 #    my_mqa_model.eval()
 #    my_mqa_model_random.eval()
 #    my_gqa_model.eval()
 #    my_gqa_model_random.eval()
-#    ppl = calculate_ppl(model, encodings, device)
+    ppl = calculate_ppl(model, encodings, device)
 #    ppl_ = calculate_ppl(my_model, encodings, device)
-#    ppl_random = calculate_ppl(my_model_random, encodings, device)
+    ppl_random = calculate_ppl(my_model_random, encodings, device)
 #    ppl_mqa = calculate_ppl(my_mqa_model, encodings, device)
 #    ppl_mqa_random = calculate_ppl(my_mqa_model_random, encodings, device)
     ppl_gqa = calculate_ppl(gqa_model, encodings, device)
     ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, device)
 
 
-#print("base: ", ppl)
+print("base: ", ppl)
 #print("base model, loaded weights: ", ppl_)
-#print("base model, random weights: ", ppl_random)
+print("base model, random weights: ", ppl_random)
 #print("MHA -> MQA, transformed weights: ", ppl_mqa)
 #print("MHA -> MQA, random weights: ", ppl_mqa_random)
 print(f"MHA -> GQA, transformed weights: ", ppl_gqa)
