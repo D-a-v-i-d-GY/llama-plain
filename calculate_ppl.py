@@ -39,8 +39,9 @@ def calculate_ppl(model, encodings, device, stride=512, max_length=1024):
 
 device = 'cuda'
 model_name = "Cheng98/llama-160m"
+torch.manual_seed(42)
 
-num_groups = 1
+num_groups = 6
 
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
