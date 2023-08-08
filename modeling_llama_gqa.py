@@ -193,8 +193,8 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids):
     return q_embed, k_embed
 
 
-def group_expand(key_states, layer_groups, num_groups, tgt_size):
-    key_states_expanded = torch.zeros(tgt_size[0], tgt_size[2], tgt_size[1], tgt_size[3])
+def group_expand(key_states, layer_groups, num_groups, tgt_size, device):
+    key_states_expanded = torch.zeros(tgt_size[0], tgt_size[2], tgt_size[1], tgt_size[3]).to(device)
     for i in range(num_groups):
         key_states_expanded[:, :, layer_groups[i], :] = key_states[:, :, i:i+1, :].expand(tgt_size[0], tgt_size[2], len(layer_groups[i]), tgt_size[-1])
     return key_states_expanded.transpose(1, 2)
@@ -249,7 +249,7 @@ class LlamaGQAttention(nn.Module):
         if list_numel(self.layer_groups) != self.num_heads:
             raise ValueError(
                 f"total number of heads in the groups must sum to {self.num_heads}"
-                f" but it is : {torch.numel(self.layer_groups)})."
+                f" but it is : {list_numel(self.layer_groups)})."
             )
         # fmt: off
         self.q_proj = nn.Linear(self.hidden_size, self.num_heads  * self.head_dim, bias=False)
@@ -288,12 +288,12 @@ class LlamaGQAttention(nn.Module):
             self.k_proj(hidden_states)
             .view(bsz, q_len, self.num_groups, self.head_dim) # only calculates a single head
         )
-        key_states = group_expand(key_states, self.layer_groups, self.num_groups, query_states.size())
+        key_states = group_expand(key_states, self.layer_groups, self.num_groups, query_states.size(), device=key_states.device)
         value_states = (
             self.v_proj(hidden_states)
             .view(bsz, q_len, self.num_groups, self.head_dim) # only calculates a single head
         )
-        value_states = group_expand(value_states, self.layer_groups, self.num_groups, query_states.size())
+        value_states = group_expand(value_states, self.layer_groups, self.num_groups, query_states.size(), device=key_states.device)
 
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
@@ -560,10 +560,10 @@ class LlamaModel(LlamaPreTrainedModel):
         self.embed_tokens = nn.Embedding(
             config.vocab_size, config.hidden_size, self.padding_idx
         )
-        if len(config.group_idx) != config.num_hidden_layers:
+        if len(config.groups_idx) != config.num_hidden_layers:
             raise ValueError(
-                f"The number of group descriptions provided : {len(config.group_idx)}"
-                f"is not equal to the number of layers : {config.num_hidden_layers}"
+                f"The number of group descriptions provided : {len(config.groups_idx)}"
+                f" is not equal to the number of layers : {config.num_hidden_layers}"
             )
         self.layers = nn.ModuleList(
             [LlamaDecoderLayer(config, i) for i in range(config.num_hidden_layers)]
