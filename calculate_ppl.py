@@ -42,13 +42,7 @@ device = 'cuda'
 model_name = "Cheng98/llama-160m"
 torch.manual_seed(42)
 
-num_groups = [1, 2, 3, 4, 6, 12]
-num_exp = len(num_groups)
-
-gqa_models = [0] * num_exp
-gqa_models_random = [0] * num_exp
-ppl_gqa = [0] * num_exp
-ppl_gqa_random = [0] * num_exp
+groups_idx = [[[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]] * 12
 
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
@@ -57,12 +51,11 @@ model = LlamaForCausalLM.from_pretrained(model_name).to(device)
 #my_model_random = LlamaForCausalLM(model.config).to(device)
 #my_mqa_model = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
 #my_mqa_model_random = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
-for i in range(num_exp):
-    model.config.num_groups = num_groups[i]
-    gqa_models[i] = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
-    gqa_models_random[i] = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
-    state = model.state_dict()
-    gqa_models[i].load_state_dict(mha2gqa(state, num_layers=12, num_heads=12, num_groups=num_groups[i]))
+model.config.groups_idx = groups_idx
+gqa_model = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
+gqa_model_random = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
+state = model.state_dict()
+gqa_model.load_state_dict(mha2gqa(state, groups_idx, num_heads=12, transpose_layer=True))
 
 #state = model.state_dict()
 #my_model.load_state_dict(state)
@@ -86,9 +79,8 @@ with torch.inference_mode():
 #    ppl_random = calculate_ppl(my_model_random, encodings, device)
 #    ppl_mqa = calculate_ppl(my_mqa_model, encodings, device)
 #    ppl_mqa_random = calculate_ppl(my_mqa_model_random, encodings, device)
-    for i in range(num_exp):
-        ppl_gqa[i] = calculate_ppl(gqa_models[i], encodings, device)
-        ppl_gqa_random[i] = calculate_ppl(gqa_models_random[i], encodings, device)
+    ppl_gqa = calculate_ppl(gqa_model, encodings, device)
+    ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, device)
 
 
 #print("base: ", ppl)
@@ -96,6 +88,5 @@ with torch.inference_mode():
 #print("base model, random weights: ", ppl_random)
 #print("MHA -> MQA, transformed weights: ", ppl_mqa)
 #print("MHA -> MQA, random weights: ", ppl_mqa_random)
-for i in range(num_exp):
-    print(f"MHA -> GQA (num_groups = {num_groups[i]}), transformed weights: ", ppl_gqa[i])
-    print(f"MHA -> GQA (num_groups = {num_groups[i]}), random weights: ", ppl_gqa_random[i], end="\n")
+print(f"MHA -> GQA, transformed weights: ", ppl_gqa)
+print(f"MHA -> GQA, random weights: ", ppl_gqa_random, end="\n")
