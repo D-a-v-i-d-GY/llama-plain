@@ -223,16 +223,24 @@ class LlamaGQAttention(nn.Module):
         self.num_heads = config.num_attention_heads
         self.head_dim = self.hidden_size // self.num_heads
         self.max_position_embeddings = config.max_position_embeddings
+        # GQA attr
+        self.num_groups = config.num_groups
+        self.group_size = self.num_heads // self.num_groups
 
         if (self.head_dim * self.num_heads) != self.hidden_size:
             raise ValueError(
                 f"hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}"
                 f" and `num_heads`: {self.num_heads})."
             )
+        if (self.group_size * self.num_groups) != self.num_heads:
+            raise ValueError(
+                f"num_heads must be divisible by num_groups (got `num_heads`: {self.num_heads}"
+                f" and `num_groups`: {self.num_groups})."
+            )
         # fmt: off
-        self.q_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
-        self.k_proj = nn.Linear(self.hidden_size, self.head_dim, bias=False)
-        self.v_proj = nn.Linear(self.hidden_size, self.head_dim, bias=False)
+        self.q_proj = nn.Linear(self.hidden_size, self.num_heads  * self.head_dim, bias=False)
+        self.k_proj = nn.Linear(self.hidden_size, self.num_groups * self.head_dim, bias=False)
+        self.v_proj = nn.Linear(self.hidden_size, self.num_groups * self.head_dim, bias=False)
         self.o_proj = nn.Linear(self.num_heads * self.head_dim, self.hidden_size, bias=False)
         # fmt: on
         self.rotary_emb = LlamaRotaryEmbedding(
@@ -264,13 +272,13 @@ class LlamaGQAttention(nn.Module):
         )  # [bs, num_heads, q_len, head_dim]
         key_states = (
             self.k_proj(hidden_states)
-            .view(bsz, q_len, 1, self.head_dim) # only calculates a single head
+            .view(bsz, q_len, self.num_groups, self.head_dim) # only calculates a single head
             .expand(bsz, q_len, self.num_heads, self.head_dim) # Copy the Key heads before being cached
             .transpose(1, 2)
         )
         value_states = (
             self.v_proj(hidden_states)
-            .view(bsz, q_len, 1, self.head_dim) # only calculates a single head
+            .view(bsz, q_len, self.num_groups, self.head_dim) # only calculates a single head
             .expand(bsz, q_len, self.num_heads, self.head_dim) # Copy the Value heads before being cached
             .transpose(1, 2)
         )
@@ -344,7 +352,7 @@ class LlamaDecoderLayer(nn.Module):
     def __init__(self, config: LlamaConfig, layer_id: int = 0):
         super().__init__()
         self.hidden_size = config.hidden_size
-        self.self_attn = LlamaMQAttention(config=config, layer_id=layer_id)
+        self.self_attn = LlamaGQAttention(config=config, layer_id=layer_id)
         self.mlp = LlamaMLP(
             hidden_size=self.hidden_size,
             intermediate_size=config.intermediate_size,

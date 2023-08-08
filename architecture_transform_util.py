@@ -65,7 +65,7 @@ def mha2mqa(state_dict, num_layers: int, num_heads: int, transpose_layer=True):
         layer = state_dict[layer_name]
         if transpose_layer: layer = layer.transpose(0, 1)
         size = layer.size()
-        layer = layer.reshape(num_heads, size[1], -1)
+        layer = layer.reshape(num_heads, size[1], -1) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
         layer = torch.mean(layer, dim=0)
         state_dict[layer_name] = layer.transpose(0, 1)
 
@@ -74,8 +74,33 @@ def mha2mqa(state_dict, num_layers: int, num_heads: int, transpose_layer=True):
         layer = state_dict[layer_name]
         if transpose_layer: layer = layer.transpose(0, 1)
         size = layer.size()
-        layer = layer.reshape(num_heads, size[1], -1)
+        layer = layer.reshape(num_heads, size[1], -1) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
         layer = torch.mean(layer, dim=0)
+        state_dict[layer_name] = layer.transpose(0, 1)
+
+    return state_dict
+
+
+def mha2gqa(state_dict, num_layers: int, num_heads: int, num_groups: int, transpose_layer=True):
+    """Uniform grouping"""
+    warnings.warn("Need to manually set the layer name if model is changed! Default is llama-160m")
+
+    for layer_id in range(num_layers):
+        layer_name = f'model.layers.{layer_id}.self_attn.k_proj.weight' # name of the attention layer projection matrices
+        layer = state_dict[layer_name]
+        if transpose_layer: layer = layer.transpose(0, 1)
+        size = layer.size()
+        layer = layer.reshape(num_groups, num_heads // num_groups, size[1], -1) #size[1] -> model dimension, for llama-160m o/p size is [num_groups, group_size, 768, 64]
+        layer = torch.mean(layer, dim=1).reshape(size[1], -1)
+        state_dict[layer_name] = layer.transpose(0, 1)
+
+    for layer_id in range(num_layers):
+        layer_name = f'model.layers.{layer_id}.self_attn.v_proj.weight' # name of the attention layer projection matrices
+        layer = state_dict[layer_name]
+        if transpose_layer: layer = layer.transpose(0, 1)
+        size = layer.size()
+        layer = layer.reshape(num_groups, num_heads // num_groups, size[1], -1) #size[1] -> model dimension, for llama-160m o/p size is [num_groups, group_size, 768, 64]
+        layer = torch.mean(layer, dim=1).reshape(size[1], -1)
         state_dict[layer_name] = layer.transpose(0, 1)
 
     return state_dict
