@@ -4,6 +4,7 @@ from transformers.models.llama.tokenization_llama import LlamaTokenizer
 import torch
 from tqdm import tqdm
 import modeling_llama_mqa
+import modeling_llama_gqa
 from architecture_transform_util import mha2mqa, mha2gqa
 
 
@@ -51,8 +52,8 @@ my_model_random = LlamaForCausalLM(model.config).to(device)
 my_mqa_model = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
 my_mqa_model_random = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
 model.config.num_groups = num_groups
-my_gqa_model = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
-my_gqa_model_random = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
+my_gqa_model = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
+my_gqa_model_random = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
 
 state = model.state_dict()
 my_model.load_state_dict(state)
