@@ -85,6 +85,8 @@ def mha2gqa(state_dict, groups_idx, num_heads, transpose_layer=True):
     """Uniform grouping"""
     warnings.warn("Need to manually set the layer name if model is changed! Default is llama-160m")
     
+    # There is a chance that the passed groupings might have the same head in two or more groups, 
+    # either raise an error, or change the way the groupings are passed so this may not happen
     num_layers = len(groups_idx)
     for layer_id in range(num_layers):
         layer_name = f'model.layers.{layer_id}.self_attn.k_proj.weight' # name of the attention layer projection matrices
