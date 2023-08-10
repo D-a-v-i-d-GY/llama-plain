@@ -47,43 +47,51 @@ tokenizer = LlamaTokenizer.from_pretrained(model_name)
 test = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
 encodings = tokenizer("\n\n".join(test["text"]), return_tensors="pt").to(device)
 
-groups_idx = [[[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]]] * 12
+groups_idx0 = [[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]] * 12
+groups_idx1 = [[[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11]]] * 12
+groups_idx2 = [[[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]] * 12
+groups_idx3 = [[[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]]] * 12
+groups_idx4 = [[[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10, 11]]] * 12
+groups_idx5 = [[[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]]] * 12
+
+groups_idxx = [groups_idx0, groups_idx1, groups_idx2, groups_idx3, groups_idx4, groups_idx5]
 
 model = LlamaForCausalLM.from_pretrained(model_name).to(device)
-model_random = LlamaForCausalLM(model.config).to(device)
-mqa_model = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
-mqa_model_random = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
+#model_random = LlamaForCausalLM(model.config).to(device)
+#mqa_model = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
+#mqa_model_random = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
+for groups_idx in groups_idxx:
+    model.config.groups_idx = groups_idx
+    gqa_model = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
+    gqa_model_random = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
 
-model.config.groups_idx = groups_idx
-gqa_model = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
-gqa_model_random = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
+    # transpose_layer should always be True, TESTED
+    state = model.state_dict()
+    gqa_model.load_state_dict(mha2gqa(state, groups_idx, num_heads=12, transpose_layer=True))
 
-state = model.state_dict()
-gqa_model.load_state_dict(mha2gqa(state, groups_idx, num_heads=12, transpose_layer=True))
-
-state = model.state_dict()
-mqa_model.load_state_dict(mha2mqa(state, num_layers=12, num_heads=12, transpose_layer=False))
-
-
-with torch.inference_mode():
-    model.eval()
-    model_random.eval()
-    mqa_model.eval()
-    mqa_model_random.eval()
-    gqa_model.eval()
-    gqa_model_random.eval()
-
-#    ppl = calculate_ppl(model, encodings, device)
-#    ppl_random = calculate_ppl(model_random, encodings, device)
-    ppl_mqa = calculate_ppl(mqa_model, encodings, device)
-#    ppl_mqa_random = calculate_ppl(mqa_model_random, encodings, device)
-    ppl_gqa = calculate_ppl(gqa_model, encodings, device)
-#    ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, device)
+    #state = model.state_dict()
+    #mqa_model.load_state_dict(mha2mqa(state, num_layers=12, num_heads=12, transpose_layer=True))
 
 
-#print("base: ", ppl)
-#print("base model, random weights: ", ppl_random)
-print("MHA -> MQA, transformed weights: ", ppl_mqa)
-#print("MHA -> MQA, random weights: ", ppl_mqa_random)
-print(f"MHA -> GQA with {len(groups_idx[0])} groups, transformed weights: ", ppl_gqa)
-#print(f"MHA -> GQA with {len(groups_idx[0])} groups, random weights: ", ppl_gqa_random, end="\n")
+    with torch.inference_mode():
+        model.eval()
+    #    model_random.eval()
+    #    mqa_model.eval()
+    #    mqa_model_random.eval()
+        gqa_model.eval()
+        gqa_model_random.eval()
+
+    #    ppl = calculate_ppl(model, encodings, device)
+    #    ppl_random = calculate_ppl(model_random, encodings, device)
+    #    ppl_mqa = calculate_ppl(mqa_model, encodings, device)
+    #    ppl_mqa_random = calculate_ppl(mqa_model_random, encodings, device)
+        ppl_gqa = calculate_ppl(gqa_model, encodings, device)
+        ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, device)
+
+
+    #print("base: ", ppl)
+    #print("base model, random weights: ", ppl_random)
+    #print("MHA -> MQA, transformed weights: ", ppl_mqa)
+    #print("MHA -> MQA, random weights: ", ppl_mqa_random)
+    print(f"MHA -> GQA with {len(groups_idx[0])} groups, transformed weights: ", ppl_gqa)
+    print(f"MHA -> GQA with {len(groups_idx[0])} groups, random weights: ", ppl_gqa_random, end="\n\n")
