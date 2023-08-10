@@ -64,8 +64,7 @@ def mha2mqa(state_dict, num_layers: int, num_heads: int, transpose_layer=True):
         layer_name = f'model.layers.{layer_id}.self_attn.k_proj.weight' # name of the attention layer projection matrices
         layer = state_dict[layer_name]
         if transpose_layer: layer = layer.transpose(0, 1)
-        size = layer.size()
-        layer = layer.reshape(num_heads, size[1], -1) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
+        layer = torch.stack(torch.tensor_split(layer, num_heads, dim=1), dim=0) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
         layer = torch.mean(layer, dim=0)
         state_dict[layer_name] = layer.transpose(0, 1)
 
@@ -73,8 +72,7 @@ def mha2mqa(state_dict, num_layers: int, num_heads: int, transpose_layer=True):
         layer_name = f'model.layers.{layer_id}.self_attn.v_proj.weight' # name of the attention layer projection matrices
         layer = state_dict[layer_name]
         if transpose_layer: layer = layer.transpose(0, 1)
-        size = layer.size()
-        layer = layer.reshape(num_heads, size[1], -1) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
+        layer = torch.stack(torch.tensor_split(layer, num_heads, dim=1), dim=0) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
         layer = torch.mean(layer, dim=0)
         state_dict[layer_name] = layer.transpose(0, 1)
 
@@ -92,9 +90,8 @@ def mha2gqa(state_dict, groups_idx, num_heads, transpose_layer=True):
         layer_name = f'model.layers.{layer_id}.self_attn.k_proj.weight' # name of the attention layer projection matrices
         layer = state_dict[layer_name]
         if transpose_layer: layer = layer.transpose(0, 1)
-        size = layer.size()
         # Code below unit tested
-        layer = layer.reshape(num_heads, size[1], -1) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
+        layer = torch.stack(torch.tensor_split(layer, num_heads, dim=1), dim=0) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
         layer = torch.cat([torch.mean(layer[group, :, :], dim=0) for group in groups_idx[layer_id]], dim=1) # [768, 64 * num_groups]
         state_dict[layer_name] = layer.transpose(0, 1) # [64 * num_groups, 768]
 
@@ -103,9 +100,8 @@ def mha2gqa(state_dict, groups_idx, num_heads, transpose_layer=True):
         layer_name = f'model.layers.{layer_id}.self_attn.v_proj.weight' # name of the attention layer projection matrices
         layer = state_dict[layer_name]
         if transpose_layer: layer = layer.transpose(0, 1)
-        size = layer.size()
         # Code below unit tested
-        layer = layer.reshape(num_heads, size[1], -1) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
+        layer = torch.stack(torch.tensor_split(layer, num_heads, dim=1), dim=0) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
         layer = torch.cat([torch.mean(layer[group, :, :], dim=0) for group in groups_idx[layer_id]], dim=1) # [768, 64 * num_groups]
         state_dict[layer_name] = layer.transpose(0, 1) # [64 * num_groups, 768]
 
