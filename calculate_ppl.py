@@ -53,9 +53,9 @@ my_model_random = LlamaForCausalLM(model.config).to(device)
 #my_mqa_model_random = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
 model.config.groups_idx = groups_idx
 gqa_model = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
-gqa_model_random = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
+#gqa_model_random = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
 state = model.state_dict()
-gqa_model.load_state_dict(mha2gqa(state, groups_idx, num_heads=12, transpose_layer=True))
+gqa_model.load_state_dict(mha2gqa(state, groups_idx, num_heads=12, transpose_layer=False))
 
 #state = model.state_dict()
 #my_model.load_state_dict(state)
@@ -80,7 +80,7 @@ with torch.inference_mode():
 #    ppl_mqa = calculate_ppl(my_mqa_model, encodings, device)
 #    ppl_mqa_random = calculate_ppl(my_mqa_model_random, encodings, device)
     ppl_gqa = calculate_ppl(gqa_model, encodings, device)
-    ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, device)
+#    ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, device)
 
 
 print("base: ", ppl)
@@ -89,4 +89,4 @@ print("base model, random weights: ", ppl_random)
 #print("MHA -> MQA, transformed weights: ", ppl_mqa)
 #print("MHA -> MQA, random weights: ", ppl_mqa_random)
 print(f"MHA -> GQA, transformed weights: ", ppl_gqa)
-print(f"MHA -> GQA, random weights: ", ppl_gqa_random, end="\n")
+#print(f"MHA -> GQA, random weights: ", ppl_gqa_random, end="\n")
