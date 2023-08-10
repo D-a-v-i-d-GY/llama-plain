@@ -73,12 +73,12 @@ with torch.inference_mode():
     gqa_model.eval()
     gqa_model_random.eval()
 
-    ppl = calculate_ppl(model, encodings, device)
-    ppl_random = calculate_ppl(model_random, encodings, device)
+#    ppl = calculate_ppl(model, encodings, device)
+#    ppl_random = calculate_ppl(model_random, encodings, device)
     ppl_mqa = calculate_ppl(mqa_model, encodings, device)
-    ppl_mqa_random = calculate_ppl(mqa_model_random, encodings, device)
+#    ppl_mqa_random = calculate_ppl(mqa_model_random, encodings, device)
     ppl_gqa = calculate_ppl(gqa_model, encodings, device)
-    ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, device)
+#    ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, device)
 
 
 #print("base: ", ppl)
