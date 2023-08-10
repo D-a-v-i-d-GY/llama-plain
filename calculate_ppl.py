@@ -59,10 +59,10 @@ gqa_model = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
 gqa_model_random = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
 
 state = model.state_dict()
-gqa_model.load_state_dict(mha2gqa(state, groups_idx, num_heads=12, transpose_layer=False))
+gqa_model.load_state_dict(mha2gqa(state, groups_idx, num_heads=12, transpose_layer=True))
 
 state = model.state_dict()
-mqa_model.load_state_dict(mha2mqa(state, num_layers=12, num_heads=12, transpose_layer=True))
+mqa_model.load_state_dict(mha2mqa(state, num_layers=12, num_heads=12, transpose_layer=False))
 
 
 with torch.inference_mode():
