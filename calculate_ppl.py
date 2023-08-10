@@ -81,9 +81,9 @@ with torch.inference_mode():
     ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, device)
 
 
-print("base: ", ppl)
-print("base model, random weights: ", ppl_random)
+#print("base: ", ppl)
+#print("base model, random weights: ", ppl_random)
 print("MHA -> MQA, transformed weights: ", ppl_mqa)
-print("MHA -> MQA, random weights: ", ppl_mqa_random)
+#print("MHA -> MQA, random weights: ", ppl_mqa_random)
 print(f"MHA -> GQA with {len(groups_idx[0])} groups, transformed weights: ", ppl_gqa)
-print(f"MHA -> GQA with {len(groups_idx[0])} groups, random weights: ", ppl_gqa_random, end="\n")
+#print(f"MHA -> GQA with {len(groups_idx[0])} groups, random weights: ", ppl_gqa_random, end="\n")
