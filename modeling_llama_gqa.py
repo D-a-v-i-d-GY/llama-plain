@@ -223,7 +223,7 @@ class LlamaMLP(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
 
 
-class LlamaGQAttention(nn.Module):
+class LlamaGQttention(nn.Module):
 
     def __init__(self, config: LlamaConfig, layer_id: int = 0):
         super().__init__()
@@ -363,7 +363,7 @@ class LlamaDecoderLayer(nn.Module):
     def __init__(self, config: LlamaConfig, layer_id: int = 0):
         super().__init__()
         self.hidden_size = config.hidden_size
-        self.self_attn = LlamaGQAttention(config=config, layer_id=layer_id)
+        self.self_attn = LlamaGQttention(config=config, layer_id=layer_id)
         self.mlp = LlamaMLP(
             hidden_size=self.hidden_size,
             intermediate_size=config.intermediate_size,

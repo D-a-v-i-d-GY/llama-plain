@@ -21,14 +21,14 @@
 # limitations under the License.
 """ PyTorch LLaMA model."""
 
-
 import math
 from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.utils.checkpoint
-from torch import nn, einsum
+from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+from transformers.models.llama import LlamaTokenizer
 from transformers.activations import ACT2FN
 from transformers.modeling_outputs import (
     BaseModelOutputWithPast,
@@ -43,12 +43,12 @@ from transformers.utils import (
     replace_return_docstrings,
 )
 
-from configuration_llama import LlamaConfig
-from transformers.models.llama import LlamaTokenizer
+from configuration_llama_llora import LlamaLoraConfig
+from lora_modules import LoraLayer, LinearLora
 
 logger = logging.get_logger(__name__)
 
-_CONFIG_FOR_DOC = "LlamaConfig"
+_CONFIG_FOR_DOC = "LlamaLoraConfig"
 
 
 # Copied from transformers.models.bart.modeling_bart._make_causal_mask
@@ -193,6 +193,17 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids):
     return q_embed, k_embed
 
 
+def group_expand(states, layer_groups, num_groups, tgt_size):
+    states_expanded = torch.empty(tgt_size[0], tgt_size[2], tgt_size[1], tgt_size[3]).to(states.device)
+    for i in range(num_groups):
+        states_expanded[:, :, layer_groups[i], :] = states[:, :, i:i+1, :].expand(tgt_size[0], tgt_size[2], len(layer_groups[i]), tgt_size[-1])
+    return states_expanded.transpose(1, 2)
+
+
+def list_numel(your_list):
+    return sum([len(sub_list) for sub_list in your_list])
+
+
 class LlamaMLP(nn.Module):
     def __init__(
         self,
@@ -212,10 +223,10 @@ class LlamaMLP(nn.Module):
         return self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
 
 
-class LlamaAttention(nn.Module):
+class LlamaGQAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
-    def __init__(self, config: LlamaConfig, layer_id: int = 0):
+    def __init__(self, config: LlamaLoraConfig, layer_id: int = 0):
         super().__init__()
         self.config = config
         self.layer_id = layer_id
@@ -223,21 +234,43 @@ class LlamaAttention(nn.Module):
         self.num_heads = config.num_attention_heads
         self.head_dim = self.hidden_size // self.num_heads
         self.max_position_embeddings = config.max_position_embeddings
-
+        self.layer_groups = config.groups_idx[layer_id] # groups_idx has to have the shape: [num_layers, {num_groups, len_grop} <- not fixed]
+        self.num_groups = len(self.layer_groups)
+        
         if (self.head_dim * self.num_heads) != self.hidden_size:
             raise ValueError(
                 f"hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}"
                 f" and `num_heads`: {self.num_heads})."
             )
+        if list_numel(self.layer_groups) != self.num_heads:
+            raise ValueError(
+                f"total number of heads in the groups must sum to {self.num_heads}"
+                f" but it is : {list_numel(self.layer_groups)})."
+            )
         # fmt: off
-        self.q_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
-        self.k_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
-        self.v_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
-        self.o_proj = nn.Linear(self.num_heads * self.head_dim, self.hidden_size, bias=False)
+        # fmt: off
+        lora_config = config.lora_config[f"model_layer_{layer_id}"]["self_attn"]
+        self.q_proj = LinearLora(adapter_name ="eng_alpaca", in_features = self.hidden_size, 
+                             out_features= self.num_heads * self.head_dim, 
+                             bias=False, config=lora_config["q_proj"])
+        
+        self.k_proj = LinearLora(adapter_name ="eng_alpaca",in_features = self.hidden_size, 
+                             out_features= self.num_groups * self.head_dim,
+                              bias=False, config=lora_config["k_proj"])
+        
+        self.v_proj = LinearLora(adapter_name ="eng_alpaca",in_features = self.hidden_size, 
+                             out_features= self.num_groups * self.head_dim,
+                              bias=False, config=lora_config["v_proj"])
+        
+        self.o_proj = LinearLora(adapter_name ="eng_alpaca",in_features = self.hidden_size, 
+                             out_features= self.num_heads * self.head_dim, 
+                             bias=False, config=lora_config["o_proj"])
+
         # fmt: on
         self.rotary_emb = LlamaRotaryEmbedding(
             self.head_dim, max_position_embeddings=self.max_position_embeddings
         )
+        self.lora_config = lora_config
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return (
@@ -264,14 +297,14 @@ class LlamaAttention(nn.Module):
         )  # [bs, num_heads, q_len, head_dim]
         key_states = (
             self.k_proj(hidden_states)
-            .view(bsz, q_len, self.num_heads, self.head_dim)
-            .transpose(1, 2)
+            .view(bsz, q_len, self.num_groups, self.head_dim) # only calculates a single head
         )
+        key_states = group_expand(key_states, self.layer_groups, self.num_groups, query_states.size())
         value_states = (
             self.v_proj(hidden_states)
-            .view(bsz, q_len, self.num_heads, self.head_dim)
-            .transpose(1, 2)
+            .view(bsz, q_len, self.num_groups, self.head_dim) # only calculates a single head
         )
+        value_states = group_expand(value_states, self.layer_groups, self.num_groups, query_states.size())
 
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
@@ -338,10 +371,10 @@ class LlamaAttention(nn.Module):
 
 
 class LlamaDecoderLayer(nn.Module):
-    def __init__(self, config: LlamaConfig, layer_id: int = 0):
+    def __init__(self, config: LlamaLoraConfig, layer_id: int = 0):
         super().__init__()
         self.hidden_size = config.hidden_size
-        self.self_attn = LlamaAttention(config=config, layer_id=layer_id)
+        self.self_attn = LlamaGQAttention(config=config, layer_id=layer_id)
         self.mlp = LlamaMLP(
             hidden_size=self.hidden_size,
             intermediate_size=config.intermediate_size,
@@ -431,7 +464,7 @@ LLAMA_START_DOCSTRING = r"""
     LLAMA_START_DOCSTRING,
 )
 class LlamaPreTrainedModel(PreTrainedModel):
-    config_class = LlamaConfig
+    config_class = LlamaLoraConfig
     base_model_prefix = "model"
     supports_gradient_checkpointing = True
     _no_split_modules = ["LlamaDecoderLayer"]
@@ -529,7 +562,7 @@ class LlamaModel(LlamaPreTrainedModel):
         config: LlamaConfig
     """
 
-    def __init__(self, config: LlamaConfig):
+    def __init__(self, config: LlamaLoraConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
