@@ -93,7 +93,7 @@ def mha2gqa(state_dict, groups_idx, num_heads, transpose_layer=True):
         layer = state_dict[layer_name]
         if transpose_layer: layer = layer.transpose(0, 1)
         # Code below unit tested
-        layer = torch.stack(torch.tensor_split(layer, num_heads, dim=1), dim=0) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
+        layer = torch.stack(torch.tensor_split(layer, num_heads, dim=1), dim=0)
         layer = torch.cat([torch.mean(layer[group, :, :], dim=0) for group in groups_idx[layer_id]], dim=1) # [768, 64 * num_groups]
         state_dict[layer_name] = layer.transpose(0, 1) # [64 * num_groups, 768]
 
@@ -103,7 +103,7 @@ def mha2gqa(state_dict, groups_idx, num_heads, transpose_layer=True):
         layer = state_dict[layer_name]
         if transpose_layer: layer = layer.transpose(0, 1)
         # Code below unit tested
-        layer = torch.stack(torch.tensor_split(layer, num_heads, dim=1), dim=0) #size[1] -> model dimension, for llama-160m o/p size is [12, 768, 64]
+        layer = torch.stack(torch.tensor_split(layer, num_heads, dim=1), dim=0)
         layer = torch.cat([torch.mean(layer[group, :, :], dim=0) for group in groups_idx[layer_id]], dim=1) # [768, 64 * num_groups]
         state_dict[layer_name] = layer.transpose(0, 1) # [64 * num_groups, 768]
 

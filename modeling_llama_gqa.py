@@ -193,11 +193,11 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids):
     return q_embed, k_embed
 
 
-def group_expand(key_states, layer_groups, num_groups, tgt_size, device):
-    key_states_expanded = torch.zeros(tgt_size[0], tgt_size[2], tgt_size[1], tgt_size[3]).to(device)
+def group_expand(states, layer_groups, num_groups, tgt_size):
+    states_expanded = torch.empty(tgt_size[0], tgt_size[2], tgt_size[1], tgt_size[3]).to(states.device)
     for i in range(num_groups):
-        key_states_expanded[:, :, layer_groups[i], :] = key_states[:, :, i:i+1, :].expand(tgt_size[0], tgt_size[2], len(layer_groups[i]), tgt_size[-1])
-    return key_states_expanded.transpose(1, 2)
+        states_expanded[:, :, layer_groups[i], :] = states[:, :, i:i+1, :].expand(tgt_size[0], tgt_size[2], len(layer_groups[i]), tgt_size[-1])
+    return states_expanded.transpose(1, 2)
 
 
 def list_numel(your_list):
@@ -224,7 +224,6 @@ class LlamaMLP(nn.Module):
 
 
 class LlamaGQAttention(nn.Module):
-    """Multi-Query attention from 'One Write-Head is all you need - Shazeer' paper"""
 
     def __init__(self, config: LlamaConfig, layer_id: int = 0):
         super().__init__()
@@ -288,12 +287,12 @@ class LlamaGQAttention(nn.Module):
             self.k_proj(hidden_states)
             .view(bsz, q_len, self.num_groups, self.head_dim) # only calculates a single head
         )
-        key_states = group_expand(key_states, self.layer_groups, self.num_groups, query_states.size(), device=key_states.device)
+        key_states = group_expand(key_states, self.layer_groups, self.num_groups, query_states.size())
         value_states = (
             self.v_proj(hidden_states)
             .view(bsz, q_len, self.num_groups, self.head_dim) # only calculates a single head
         )
-        value_states = group_expand(value_states, self.layer_groups, self.num_groups, query_states.size(), device=key_states.device)
+        value_states = group_expand(value_states, self.layer_groups, self.num_groups, query_states.size())
 
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
