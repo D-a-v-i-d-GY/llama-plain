@@ -9,7 +9,7 @@ import modeling_llama_gqa
 from architecture_transform_util import mha2mqa, mha2gqa
 
 
-def calculate_ppl(model, encodings, stride=512, max_length=-1):
+def calculate_ppl(model, encodings, stride=512, max_length=2048):
     seq_len = encodings.numel()
 
     nlls = []
@@ -19,9 +19,9 @@ def calculate_ppl(model, encodings, stride=512, max_length=-1):
         if max_length == -1: 
             end_loc = seq_len
         trg_len = end_loc - prev_end_loc  # may be different from stride on last loop
-        input_ids = encodings[begin_loc:end_loc].to(encodings.device)
+        input_ids = encodings[:, begin_loc:end_loc].to(encodings.device)
         target_ids = input_ids.clone()
-        target_ids[:-trg_len] = -100
+        target_ids[:, :-trg_len] = -100
 
         with torch.inference_mode():
             outputs = model(input_ids, labels=target_ids)
@@ -82,7 +82,7 @@ test = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
 encodings = test.map(lambda x: tokenizer(x["text"], return_tensors="pt"))
 encodings = merge_list(encodings["input_ids"][:100])
 encodings = merge_list(encodings)
-encodings = torch.tensor(encodings).to(device)
+encodings = torch.tensor(encodings).reshape(1, -1).to(device)
 
 # Peft model
 model = LlamaForCausalLM.from_pretrained(model_name).to(device)
@@ -131,3 +131,4 @@ print("base model, LoRA tuned: ", ppl_peft)
 #for i in range(group_ppl):
 #    print(f"MHA -> GQA with {len(group_idxx[i])} groups, transformed weights: ", group_ppl[i][0])
 #    print(f"MHA -> GQA with {len(group_idxx[i])} groups, random weights: ", group_ppl[i][1], end="\n\n")
+
