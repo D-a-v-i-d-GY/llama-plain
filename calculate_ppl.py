@@ -9,15 +9,17 @@ import modeling_llama_gqa
 from architecture_transform_util import mha2mqa, mha2gqa
 
 
-def calculate_ppl(model, encodings, stride=512, max_length=2048):
-    seq_len = encodings.input_ids.size(1)
+def calculate_ppl(model, encodings, stride=512, max_length=-1):
+    seq_len = encodings.numel()
 
     nlls = []
     prev_end_loc = 0
     for begin_loc in tqdm(range(0, seq_len, stride)):
         end_loc = min(begin_loc + max_length, seq_len)
+        if max_length == -1: 
+            end_loc = seq_len
         trg_len = end_loc - prev_end_loc  # may be different from stride on last loop
-        input_ids = encodings.input_ids[:, begin_loc:end_loc].to(encodings.device)
+        input_ids = encodings[begin_loc:end_loc].to(encodings.device)
         target_ids = input_ids.clone()
         target_ids[:, :-trg_len] = -100
 
@@ -64,8 +66,8 @@ def group_ppl_calc(model, group_idxx):
             gqa_model.eval()
             gqa_model_random.eval()
 
-            ppl_gqa = calculate_ppl(gqa_model, encodings, device)
-            ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, device)
+            ppl_gqa = calculate_ppl(gqa_model, encodings, max_length=-1)
+            ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, max_length=-1)
         ppl_out[i] = (ppl_gqa, ppl_gqa_random)
     
     return ppl_out
@@ -80,6 +82,7 @@ test = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
 encodings = test.map(lambda x: tokenizer(x["text"], return_tensors="pt"))
 encodings = merge_list(encodings["input_ids"][:100])
 encodings = merge_list(encodings)
+encodings = torch.tensor(encodings).to(device)
 
 # Peft model
 model = LlamaForCausalLM.from_pretrained(model_name).to(device)
@@ -111,11 +114,11 @@ with torch.inference_mode():
 #    mqa_model.eval()
 #    mqa_model_random.eval()
 
-    ppl = calculate_ppl(model, encodings)
-    ppl_peft = calculate_ppl(peft_model, encodings)
-    ppl_random = calculate_ppl(model_random, encodings)
-#    ppl_mqa = calculate_ppl(mqa_model, encodings, device)
-#    ppl_mqa_random = calculate_ppl(mqa_model_random, encodings, device)
+    ppl = calculate_ppl(model, encodings, max_length=-1)
+    ppl_peft = calculate_ppl(peft_model, encodings, max_length=-1)
+    ppl_random = calculate_ppl(model_random, encodings, max_length=-1)
+#    ppl_mqa = calculate_ppl(mqa_model, encodings, max_length=-1)
+#    ppl_mqa_random = calculate_ppl(mqa_model_random, encodings, max_length=-1)
     pass
     
 # group_ppl = group_ppl_calc(group_idxx)
