@@ -1,16 +1,11 @@
 import torch
 import os
 
-# Load model directly
-#from transformers.models.llama import LlamaTokenizerFast
 from transformers.models.llama.modeling_llama import LlamaForCausalLM
 from transformers.models.llama.tokenization_llama import LlamaTokenizer
-#from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
 import transformers
-from peft import get_peft_config, PeftModel, PeftConfig, get_peft_model, LoraConfig, TaskType
-from data_module import MyDataModule
-from accelerate_train import train
+from peft import get_peft_model, LoraConfig
 
 def main():
 
@@ -23,14 +18,6 @@ def main():
     gradient_accumulation_steps: int = 2
     learning_rate: float = 5e-5
     num_warmup_steps: int = 0
-#    task = "lm"
-#    dataset_name = "wikitext2"
-#    max_token_len = 128
-#    num_workers = os.cpu_count()
-#    optimizer = "adamw"
-#    weight_decay: float = 0.0
-#    lr_scheduler_type: str = "linear"
-#    save_path: str = "./ckpts"
     
     model = LlamaForCausalLM.from_pretrained(
         model_name, 
@@ -49,7 +36,6 @@ def main():
         r=r, 
         lora_alpha=lora_alpha, 
         target_modules=["q_proj", "v_proj"],
-        #inference_mode=False, 
         lora_dropout=0.05, 
         bias="none",
         task_type="CAUSAL_LM",
@@ -60,8 +46,6 @@ def main():
 
     train_data = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
     train_data_enc = train_data.map(lambda x: tokenizer(x["text"]))
-    #eval_data = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
-    #train_data_enc.set_format(type=train_data_enc.format["type"], columns=list(train_data_enc.features.keys()))
 
     trainer = transformers.Trainer(
         model=model,
@@ -75,7 +59,7 @@ def main():
             max_steps=max_steps,
             learning_rate=learning_rate,
             fp16=True,
-            logging_steps=1000,
+            logging_steps=None,
             load_best_model_at_end=True,
             output_dir="my-lora-train-ckpts",
         ),
@@ -86,7 +70,8 @@ def main():
     model.config.use_cache=False
     trainer.train()
 
-    model_id = f"lora_models/plain-lora-0"
+    index = len(os.listdir("lora_models/"))
+    model_id = f"lora_models/plain-lora-{index}"
     model.save_pretrained(model_id)
 
 if __name__ == "__main__":
