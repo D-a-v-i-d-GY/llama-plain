@@ -13,10 +13,10 @@ def main():
     batch_size = 4
     max_epochs: int = 1
     max_steps: int = -1
-    r = 4
+    r = 8
     lora_alpha = 8
-    gradient_accumulation_steps: int = 2
-    learning_rate: float = 5e-5
+    gradient_accumulation_steps: int = 4
+    learning_rate: float = 2e-4
     num_warmup_steps: int = 0
     
     model = LlamaForCausalLM.from_pretrained(
