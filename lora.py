@@ -16,11 +16,11 @@ def main():
 
     model_name = "Cheng98/llama-160m"
     batch_size = 4
-    max_epochs: int = 4
+    max_epochs: int = 1
     max_steps: int = -1
     r = 4
     lora_alpha = 8
-    gradient_accumulation_steps: int = 4
+    gradient_accumulation_steps: int = 2
     learning_rate: float = 5e-5
     num_warmup_steps: int = 0
 #    task = "lm"
