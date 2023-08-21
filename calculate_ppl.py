@@ -33,6 +33,10 @@ def calculate_ppl(model, encodings, stride=512, max_length=2048):
 
         nlls.append(neg_log_likelihood)
 
+        print(begin_loc)
+        print(end_loc)
+        print(prev_end_loc)
+        print(trg_len)
         prev_end_loc = end_loc
         if end_loc == seq_len:
             break
@@ -81,7 +85,7 @@ max_length = 4096
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
 test = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
 encodings = test.map(lambda x: tokenizer(x["text"], return_tensors="pt"))
-encodings = merge_list(encodings["input_ids"][:250])
+encodings = merge_list(encodings["input_ids"])
 encodings = merge_list(encodings)
 encodings = torch.tensor(encodings).reshape(1, -1).to(device)
 
