@@ -21,9 +21,9 @@ def calculate_ppl(model, encodings, stride=512, max_length=-1):
         trg_len = end_loc - prev_end_loc  # may be different from stride on last loop
         input_ids = encodings[begin_loc:end_loc].to(encodings.device)
         target_ids = input_ids.clone()
-        target_ids[:, :-trg_len] = -100
+        target_ids[:-trg_len] = -100
 
-        with torch.no_grad():
+        with torch.inference_mode():
             outputs = model(input_ids, labels=target_ids)
 
             # loss is calculated using CrossEntropyLoss which averages over valid labels
