@@ -59,7 +59,7 @@ def main():
             max_steps=max_steps,
             learning_rate=learning_rate,
             fp16=True,
-            logging_steps=None,
+            logging_steps=3000,
             load_best_model_at_end=True,
             output_dir="my-lora-train-ckpts",
         ),
