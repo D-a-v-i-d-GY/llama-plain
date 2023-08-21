@@ -33,10 +33,6 @@ def calculate_ppl(model, encodings, stride=512, max_length=2048):
 
         nlls.append(neg_log_likelihood)
 
-        print(begin_loc)
-        print(end_loc)
-        print(prev_end_loc)
-        print(trg_len)
         prev_end_loc = end_loc
         if end_loc == seq_len:
             break
@@ -79,7 +75,7 @@ def group_ppl_calc(model, group_idxx):
 device = 'cuda'
 model_name = "Cheng98/llama-160m"
 torch.manual_seed(420)
-max_length = 4096
+max_length = 1536
 
 # Prepare & encode data
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
