@@ -14,9 +14,11 @@ from lora_utils import (
     print_trainable_parameters,
 )
 from configuration_llama_llora import LlamaLoraConfig
-from modeling_llama_llora import LlamaForCausalLM
+#from modeling_llama import LlamaForCausalLM
+from transformers.models.llama.modeling_llama import LlamaForCausalLM
 from transformers.models.llama import LlamaTokenizer
 import toml
+from peft import get_peft_model, TaskType, LoraConfig
 
 
 def main():
@@ -53,13 +55,23 @@ def main():
             lora_config_path = toml.load(f)
         print(f"LoRA PEFT with {config_file} config file successfully loaded!")
 
-    peft_config = LlamaLoraConfig.from_pretrained(
-        pretrained_model_name_or_path=model_name, lora_config=lora_config_path
+    #peft_config = LlamaLoraConfig.from_pretrained(
+    #    pretrained_model_name_or_path=model_name, lora_config=lora_config_path
+    #)
+    #peft_config.task_type = TaskType.CAUSAL_LM
+    peft_config = LoraConfig(
+    r=4,
+    lora_alpha=8,
+    target_modules=["q_proj", "v_proj"],
+    lora_dropout=0.1,
+    bias="none",
     )
+
     model = LlamaForCausalLM.from_pretrained(
-        pretrained_model_name_or_path=model_name, config=peft_config
+        pretrained_model_name_or_path=model_name, # config=peft_config
     )
-    model = mark_only_lora_as_trainable(model)
+    model = get_peft_model(model, peft_config)
+
     print_trainable_parameters(model)
     tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
