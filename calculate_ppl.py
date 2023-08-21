@@ -75,6 +75,7 @@ def group_ppl_calc(model, group_idxx):
 device = 'cuda'
 model_name = "Cheng98/llama-160m"
 torch.manual_seed(420)
+max_length = 4096
 
 # Prepare & encode data
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
@@ -102,29 +103,29 @@ group_idx5 = [[[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]]] * 
 group_idxx = [group_idx0, group_idx1, group_idx2, group_idx3, group_idx4, group_idx5]
 
 
-model_random = LlamaForCausalLM(model.config).to(device)
+#model_random = LlamaForCausalLM(model.config).to(device)
 #mqa_model = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
 #mqa_model_random = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
 #state = model.state_dict()
 #mqa_model.load_state_dict(mha2mqa(state, num_layers=12, num_heads=12, transpose_layer=True))
 
 with torch.inference_mode():
-    model_random.eval()
+ #   model_random.eval()
     peft_model.eval()
 #    mqa_model.eval()
 #    mqa_model_random.eval()
 
-    ppl = calculate_ppl(model, encodings, max_length=2048)
-    ppl_peft = calculate_ppl(peft_model, encodings, max_length=2048)
-    ppl_random = calculate_ppl(model_random, encodings, max_length=2048)
-#    ppl_mqa = calculate_ppl(mqa_model, encodings, max_length=-1)
-#    ppl_mqa_random = calculate_ppl(mqa_model_random, encodings, max_length=-1)
+    ppl = calculate_ppl(model, encodings, max_length=max_length)
+    ppl_peft = calculate_ppl(peft_model, encodings, max_length=max_length)
+ #   ppl_random = calculate_ppl(model_random, encodings, max_length=max_length)
+#    ppl_mqa = calculate_ppl(mqa_model, encodings, max_length=max_length)
+#    ppl_mqa_random = calculate_ppl(mqa_model_random, encodings, max_length=max_length)
     pass
     
 # group_ppl = group_ppl_calc(group_idxx)
 
 print("base: ", ppl)
-print("base model, random weights: ", ppl_random)
+#print("base model, random weights: ", ppl_random)
 print("base model, LoRA tuned: ", ppl_peft)
 #print("MHA -> MQA, transformed weights: ", ppl_mqa)
 #print("MHA -> MQA, random weights: ", ppl_mqa_random)
