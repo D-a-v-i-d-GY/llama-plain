@@ -80,7 +80,7 @@ torch.manual_seed(420)
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
 test = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
 encodings = test.map(lambda x: tokenizer(x["text"], return_tensors="pt"))
-encodings = merge_list(encodings["input_ids"][:100])
+encodings = merge_list(encodings["input_ids"][:250])
 encodings = merge_list(encodings)
 encodings = torch.tensor(encodings).reshape(1, -1).to(device)
 
