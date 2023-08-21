@@ -61,7 +61,7 @@ def main():
     train_data = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
     train_data_enc = train_data.map(lambda x: tokenizer(x["text"]))
     #eval_data = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
-    train_data_enc.set_format(type=train_data_enc.format["type"], columns=list(train_data_enc.features.keys()))
+    #train_data_enc.set_format(type=train_data_enc.format["type"], columns=list(train_data_enc.features.keys()))
 
     trainer = transformers.Trainer(
         model=model,
@@ -85,7 +85,7 @@ def main():
     model.config.use_cache=False
     trainer.train()
 
-    model_id = f"plain-lora-0"
+    model_id = f"lora_models/plain-lora-0"
     model.save_pretrained(model_id)
 
 if __name__ == "__main__":

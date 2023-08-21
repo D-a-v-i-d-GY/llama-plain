@@ -83,7 +83,7 @@ encodings = merge_list(encodings)
 
 # Peft model
 model = LlamaForCausalLM.from_pretrained(model_name).to(device)
-peft_model_id = "plain-lora-0"
+peft_model_id = "lora_models/plain-lora-0"
 #model_id = "my-lora-ckpts/checkpoint-4500"
 config = PeftConfig.from_pretrained(peft_model_id)
 peft_model = PeftModel.from_pretrained(model, peft_model_id).to(device)
