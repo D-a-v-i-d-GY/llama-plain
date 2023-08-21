@@ -75,7 +75,7 @@ def group_ppl_calc(model, group_idxx):
 device = 'cuda'
 model_name = "Cheng98/llama-160m"
 torch.manual_seed(420)
-max_length = 1536
+max_length = 1024
 
 # Prepare & encode data
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
