@@ -114,9 +114,9 @@ with torch.inference_mode():
 #    mqa_model.eval()
 #    mqa_model_random.eval()
 
-    ppl = calculate_ppl(model, encodings, max_length=-1)
-    ppl_peft = calculate_ppl(peft_model, encodings, max_length=-1)
-    ppl_random = calculate_ppl(model_random, encodings, max_length=-1)
+    ppl = calculate_ppl(model, encodings, max_length=2048)
+    ppl_peft = calculate_ppl(peft_model, encodings, max_length=2048)
+    ppl_random = calculate_ppl(model_random, encodings, max_length=2048)
 #    ppl_mqa = calculate_ppl(mqa_model, encodings, max_length=-1)
 #    ppl_mqa_random = calculate_ppl(mqa_model_random, encodings, max_length=-1)
     pass
