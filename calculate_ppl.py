@@ -87,7 +87,7 @@ encodings = torch.tensor(encodings).reshape(1, -1).to(device)
 
 # Peft model
 model = LlamaForCausalLM.from_pretrained(model_name).to(device)
-peft_model_id = "lora_models/plain-lora-0"
+peft_model_id = "lora_models/plain-lora-1"
 config = PeftConfig.from_pretrained(peft_model_id)
 peft_model = PeftModel.from_pretrained(model, peft_model_id).to(device)
 
