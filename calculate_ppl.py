@@ -3,7 +3,7 @@ from transformers.models.llama.modeling_llama import LlamaForCausalLM
 from transformers.models.llama.tokenization_llama import LlamaTokenizer
 import torch
 from tqdm import tqdm
-from peft import PeftModel, PeftConfig
+from peft import get_peft_model, LoraConfig
 import modeling_llama_mqa
 import modeling_llama_gqa
 from architecture_transform_util import mha2mqa, mha2gqa
@@ -85,11 +85,11 @@ encodings = merge_list(encodings["input_ids"])
 encodings = merge_list(encodings)
 encodings = torch.tensor(encodings).reshape(1, -1).to(device)
 
-# Peft model
+# LoRA model
 model = LlamaForCausalLM.from_pretrained(model_name).to(device)
-peft_model_id = "lora_models/plain-lora-1"
-config = PeftConfig.from_pretrained(peft_model_id)
-peft_model = PeftModel.from_pretrained(model, peft_model_id).to(device)
+lora_model_id = "lora_models/plain-lora-1"
+lora_config = LoraConfig.from_pretrained(lora_model_id)
+peft_model = get_peft_model(model, lora_config).to(device)
 
 # Define groups, very rough implementation #NEEDS IMPROVEMENT
 group_idx0 = [[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]] * 12
@@ -110,6 +110,7 @@ group_idxx = [group_idx0, group_idx1, group_idx2, group_idx3, group_idx4, group_
 
 with torch.inference_mode():
  #   model_random.eval()
+    model.eval()
     peft_model.eval()
 #    mqa_model.eval()
 #    mqa_model_random.eval()
