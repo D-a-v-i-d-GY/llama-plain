@@ -15,7 +15,7 @@ from accelerate_train import train
 def main():
 
     model_name = "Cheng98/llama-160m"
-    batch_size = 16
+    batch_size = 4
     max_epochs: int = 4
     max_steps: int = -1
     r = 4
@@ -75,7 +75,7 @@ def main():
             max_steps=max_steps,
             learning_rate=learning_rate,
             fp16=True,
-            logging_steps=1,
+            logging_steps=1000,
             output_dir="my-lora-train-ckpts",
         ),
         data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
