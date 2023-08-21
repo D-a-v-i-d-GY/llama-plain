@@ -60,7 +60,6 @@ def main():
             learning_rate=learning_rate,
             fp16=True,
             logging_steps=3000,
-            load_best_model_at_end=True,
             output_dir="my-lora-train-ckpts",
         ),
         data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
