@@ -88,9 +88,10 @@ encodings = torch.tensor(encodings).reshape(1, -1).to(device)
 # Peft model
 model = LlamaForCausalLM.from_pretrained(model_name).to(device)
 peft_model_id = "lora_models/plain-lora-0"
-#model_id = "my-lora-ckpts/checkpoint-4500"
+model_id = "my-lora-ckpts/checkpoint-4500"
+lora_model = PeftConfig.from_pretrained(model_id)
 config = PeftConfig.from_pretrained(peft_model_id)
-peft_model = PeftModel.from_pretrained(model, peft_model_id).to(device)
+peft_model = PeftModel.from_pretrained(lora_model, peft_model_id).to(device)
 
 # Define groups, very rough implementation #NEEDS IMPROVEMENT
 group_idx0 = [[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]] * 12
