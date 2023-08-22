@@ -10,7 +10,7 @@ import modeling_llama_gqa
 from architecture_transform_util import mha2mqa, mha2gqa
 
 
-def calculate_ppl(model, encodings, stride=512, max_length=2048):
+def calculate_ppl(input_model, encodings, stride=512, max_length=2048):
     seq_len = encodings.numel()
 
     nlls = []
@@ -25,7 +25,7 @@ def calculate_ppl(model, encodings, stride=512, max_length=2048):
         target_ids[:, :-trg_len] = -100
 
         with torch.inference_mode():
-            outputs = model(input_ids, labels=target_ids)
+            outputs = input_model(input_ids, labels=target_ids)
 
             # loss is calculated using CrossEntropyLoss which averages over valid labels
             # N.B. the model only calculates loss over trg_len - 1 labels, because it internally shifts the labels
@@ -73,7 +73,7 @@ def group_ppl_calc(model, group_idxx):
     
     return ppl_out
 
-device = 'cuda'
+device = 'cuda:2'
 model_name = "Cheng98/llama-160m"
 torch.manual_seed(420)
 max_length = 1024

@@ -12,7 +12,7 @@ def main():
     # Model Parameters
     model_name = "Cheng98/llama-160m"
     batch_size = 4
-    max_epochs: int = 1
+    max_epochs: int = 3
     max_steps: int = -1
     r = 8
     lora_alpha = 8
