@@ -89,7 +89,7 @@ encodings = torch.tensor(encodings).reshape(1, -1).to(device)
 # LoRA model (latest)
 model = LlamaForCausalLM.from_pretrained(model_name).to(device)
 index = len(os.listdir("lora_models/"))
-lora_model_id = f"lora_models/plain-lora-{index}"
+lora_model_id = f"lora_models/plain-lora-{index - 1}"
 print(f"Loading {lora_model_id}")
 lora_config = LoraConfig.from_pretrained(lora_model_id)
 peft_model = get_peft_model(model, lora_config).to(device)
