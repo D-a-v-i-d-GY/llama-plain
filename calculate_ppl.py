@@ -2,6 +2,7 @@ from datasets import load_dataset
 from transformers.models.llama.modeling_llama import LlamaForCausalLM
 from transformers.models.llama.tokenization_llama import LlamaTokenizer
 import torch
+import os
 from tqdm import tqdm
 from peft import get_peft_model, LoraConfig
 import modeling_llama_mqa
@@ -85,9 +86,10 @@ encodings = merge_list(encodings["input_ids"])
 encodings = merge_list(encodings)
 encodings = torch.tensor(encodings).reshape(1, -1).to(device)
 
-# LoRA model
+# LoRA model (latest)
 model = LlamaForCausalLM.from_pretrained(model_name).to(device)
-lora_model_id = "lora_models/plain-lora-1"
+index = len(os.listdir("lora_models/"))
+lora_model_id = f"lora_models/plain-lora-{index}"
 lora_config = LoraConfig.from_pretrained(lora_model_id)
 peft_model = get_peft_model(model, lora_config).to(device)
 
