@@ -73,6 +73,7 @@ def group_ppl_calc(model, group_idxx):
     
     return ppl_out
 
+
 device = 'cuda:2'
 model_name = "Cheng98/llama-160m"
 torch.manual_seed(420)
@@ -128,8 +129,8 @@ with torch.inference_mode():
 # group_ppl = group_ppl_calc(group_idxx)
 
 print("base: ", ppl)
-#print("base model, random weights: ", ppl_random)
 print("base model, LoRA tuned: ", ppl_peft)
+#print("base model, random weights: ", ppl_random)
 #print("MHA -> MQA, transformed weights: ", ppl_mqa)
 #print("MHA -> MQA, random weights: ", ppl_mqa_random)
 #for i in range(group_ppl):

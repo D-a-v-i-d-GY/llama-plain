@@ -101,6 +101,11 @@ def main():
         load_type=load_type,
     )
 
+    index = len(os.listdir("lora_models/"))
+    model_id = f"lora_models/plain-lora-{index}"
+
+    model.save_pretrained(model_id)
+
 
 if __name__ == "__main__":
     main()

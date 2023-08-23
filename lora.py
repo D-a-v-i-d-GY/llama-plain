@@ -29,10 +29,10 @@ def main():
     tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
     # Freeze non-LoRA parameters 
-    for param in model.parameters():
-        param.requires_grad = False
-        if param.ndim == 1:
-            param.data = param.data.to(torch.float32)
+    #for param in model.parameters():
+    #    param.requires_grad = False
+    #    if param.ndim == 1:
+    #        param.data = param.data.to(torch.float32)
 
     # Peft config for LoRA
     peft_config = LoraConfig(
@@ -77,6 +77,7 @@ def main():
     model_id = f"lora_models/plain-lora-{index}"
 
     model_to_save = trainer.model.module if hasattr(trainer.model, "module") else trainer.model
+    print(model_to_save)
     model_to_save.save_pretrained(model_id)
 
     #model.save_pretrained(model_id)
