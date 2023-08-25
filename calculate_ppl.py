@@ -93,9 +93,7 @@ index = len(os.listdir("lora_models/"))
 lora_model_id = f"lora_models/plain-lora-{index - 1}"
 print(f"Loading {lora_model_id}")
 lora_config = LoraConfig.from_pretrained(lora_model_id)
-peft_model = PeftModel(model, lora_config).to(device)
-
-#peft_model = peft_model.merge_and_unload()
+peft_model = get_peft_model(model, lora_config).to(device)
 
 # Define groups, very rough implementation #NEEDS IMPROVEMENT
 group_idx0 = [[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]] * 12
