@@ -15,7 +15,7 @@ def main():
     max_epochs: int = 1
     max_steps: int = 100
     r = 8
-    lora_alpha = 8
+    lora_alpha = 1
     gradient_accumulation_steps: int = 4
     learning_rate: float = 2e-4
     num_warmup_steps: int = 0
@@ -39,7 +39,7 @@ def main():
         r=r, 
         lora_alpha=lora_alpha, 
         target_modules=["q_proj", "v_proj"],
-        lora_dropout=0.05, 
+        #lora_dropout=0.05, 
         bias="none",
         task_type="CAUSAL_LM",
     )
@@ -73,12 +73,20 @@ def main():
     peft_model.config.use_cache=False
     trainer.train()
 
+    lora_A_layer_before = peft_model.state_dict()['base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight']
+    lora_B_layer = peft_model.state_dict()['base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight']
+    print(torch.where(lora_B_layer != torch.zeros_like(lora_B_layer)))
+
     index = len(os.listdir("lora_models/"))
     model_id = f"lora_models/plain-lora-{index}"
 
     model_to_save = trainer.model.module if hasattr(trainer.model, "module") else trainer.model
     model_to_save.save_pretrained(model_id, save_adapter=True, save_config=True)
-
+    
+    lora_A_layer_after = peft_model.state_dict()['base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight']
+    lora_B_layer = model_to_save.state_dict()['base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight']
+    print(torch.where(lora_B_layer != torch.zeros_like(lora_B_layer)))
+    print(torch.where(lora_A_layer_before != lora_A_layer_after))
     #model.save_pretrained(model_id)
 
 if __name__ == "__main__":

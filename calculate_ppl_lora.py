@@ -86,12 +86,6 @@ save_path: str = "./ckpts-lora-plain"
 load_name: str = None
 load_type: str = ""
 
-for config_file in config_files:
-    # load toml config file
-    with open(config_file, "r") as f:
-        lora_config_path = toml.load(f)
-    print(f"LoRA PEFT with {config_file} config file successfully loaded!")
-
 #peft_config = LlamaLoraConfig.from_pretrained(
 #    pretrained_model_name_or_path=model_name, lora_config=lora_config_path
 #)
@@ -115,7 +109,7 @@ peft_model = LlamaForCausalLM.from_pretrained(
 print_trainable_parameters(peft_model)
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
-lora_B_layer = peft_model.state_dict()['base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight']
+lora_B_layer = peft_model.state_dict()['model.layers.0.self_attn.v_proj.lora_B.eng_alpaca.weight']
 print(lora_B_layer)
 print(torch.where(lora_B_layer != torch.zeros_like(lora_B_layer)))
 
