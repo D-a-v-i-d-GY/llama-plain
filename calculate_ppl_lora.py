@@ -86,7 +86,7 @@ config_files = [
 #    pretrained_model_name_or_path=model_name, lora_config=lora_config_path
 #)
 #peft_config.task_type = TaskType.CAUSAL_LM
-index = input("Index of the lora param file: ")
+index = int(input("Index of the lora param file: "))
 if index == -1:
     index = len(os.listdir("ckpts-llama-lora-plain/")) - 1
 model_to_load = f"ckpts-llama-lora-plain/{index}"
