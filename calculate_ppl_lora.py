@@ -1,15 +1,21 @@
-from datasets import load_dataset
-from transformers.models.llama.modeling_llama import LlamaForCausalLM
-from transformers.models.llama.tokenization_llama import LlamaTokenizer
-import torch
 import os
-from tqdm import tqdm
-from peft import get_peft_model, LoraConfig, PeftModel
-import modeling_llama_mqa
-import modeling_llama_gqa
-from architecture_transform_util import mha2mqa, mha2gqa
+
+os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
+
+from accelerate_peft import train, parse_arguments
+from data_module import MyDataModule
+from lora_utils import (
+    print_trainable_parameters,
+    mark_only_lora_as_trainable
+)
+
+from configuration_llama_llora import LlamaLoraConfig
+from modeling_llama_llora import LlamaForCausalLM
+from transformers.models.llama import LlamaTokenizer
 import toml
-from lora_utils import print_trainable_parameters
+from datasets import load_dataset
+import torch
+from tqdm import tqdm
 
 
 def calculate_ppl(input_model, encodings, stride=512, max_length=2048):
@@ -52,30 +58,6 @@ def merge_list(input_list):
     return out
 
 
-def group_ppl_calc(model, group_idxx):
-    ppl_out = []
-    for i in range(len(group_idxx)):
-        group_idx = group_idxx[i]
-        model.config.groups_idx = group_idx
-        gqa_model = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
-        gqa_model_random = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
-
-        # transpose_layer should always be True, TESTED
-        state = model.state_dict()
-        gqa_model.load_state_dict(mha2gqa(state, group_idx, num_heads=12, transpose_layer=True))
-
-        with torch.inference_mode():
-            model.eval()
-            gqa_model.eval()
-            gqa_model_random.eval()
-
-            ppl_gqa = calculate_ppl(gqa_model, encodings, max_length=-1)
-            ppl_gqa_random = calculate_ppl(gqa_model_random, encodings, max_length=-1)
-        ppl_out[i] = (ppl_gqa, ppl_gqa_random)
-    
-    return ppl_out
-
-
 device = 'cuda'
 max_length = 1024
 model_name = "Cheng98/llama-160m"
@@ -116,16 +98,21 @@ for config_file in config_files:
 #peft_config.task_type = TaskType.CAUSAL_LM
 
 index = len(os.listdir("ckpts-llama-lora-plain/"))
-lora_model_id = f"ckpts-llama-lora-plain/{index - 1}"
-print(f"Loading {lora_model_id}")
-lora_config = LoraConfig.from_pretrained(lora_model_id)
+for config_file in config_files:
+    # load toml config file
+    with open(config_file, "r") as f:
+        lora_config_path = toml.load(f)
+    print(f"LoRA PEFT with {config_file} config file successfully loaded!")
 
-model = LlamaForCausalLM.from_pretrained(
-    pretrained_model_name_or_path=model_name, # config=peft_config
-).to(device)
-peft_model = get_peft_model(model, lora_config).to(device)
 
-print_trainable_parameters(model)
+peft_config = LlamaLoraConfig.from_pretrained(
+    pretrained_model_name_or_path=f"ckpts-llama-lora-plain/{index}", lora_config=lora_config_path
+)
+peft_model = LlamaForCausalLM.from_pretrained(
+    pretrained_model_name_or_path=f"ckpts-llama-lora-plain/{index}", config=peft_config
+)
+
+print_trainable_parameters(peft_model)
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
 lora_B_layer = peft_model.state_dict()['base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight']
