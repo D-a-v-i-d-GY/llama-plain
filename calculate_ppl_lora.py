@@ -65,26 +65,6 @@ model_name = "Cheng98/llama-160m"
 config_files = [
     "lora_by_type.toml",
 ]
-task = "lm"
-dataset_name = "wikitext2"
-max_token_len = 128
-batch_size = 16
-num_workers = os.cpu_count()
-optimizer = "adamw"
-max_epochs: int = 2
-max_steps: int = -1
-gradient_accumulation_steps: int = 1
-# Reduced for unit test
-# max_epochs: int = 2
-# max_steps: int = -1
-# gradient_accumulation_steps: int = 4
-learning_rate: float = 5e-5
-weight_decay: float = 0.01
-lr_scheduler_type: str = "linear"
-num_warmup_steps: int = 0
-save_path: str = "./ckpts-lora-plain"
-load_name: str = None
-load_type: str = ""
 
 #peft_config = LlamaLoraConfig.from_pretrained(
 #    pretrained_model_name_or_path=model_name, lora_config=lora_config_path

@@ -35,10 +35,6 @@ def main():
     max_epochs: int = 5
     max_steps: int = -1
     gradient_accumulation_steps: int = 4
-    # Reduced for unit test
-    # max_epochs: int = 2
-    # max_steps: int = -1
-    # gradient_accumulation_steps: int = 4
     learning_rate: float = 5e-4
     weight_decay: float = 0.0
     lr_scheduler_type: str = "linear"
@@ -46,7 +42,6 @@ def main():
     save_path: str = "./ckpts-llama-lora-plain"
     load_name: str = None
     load_type: str = ""
-    evaluate_before_training: bool = False
 
     for config_file in config_files:
         # load toml config file

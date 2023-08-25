@@ -1,7 +1,6 @@
 import math
 import os
 from functools import partial
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -26,6 +25,18 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 logger = getLogger(__name__)
 
 
+def get_lora_state(state_dict, num_layers=12):
+    """Only works for model of class LlamaForCausalLM from modeling_llama_llora"""
+    state = dict()
+    for layer_id in range(num_layers):
+        for head in ["q", "v"]:
+            for lora_mat in ["A", "B"]:
+                layer = f'model.layers.{layer_id}.self_attn.{head}_proj.lora_{lora_mat}.eng_alpaca.weight'
+                state[layer] = state_dict[layer]
+
+    return state
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Train the model.")
     parser.add_argument(
@@ -48,7 +59,7 @@ def checkpoint_model(accelerator: Accelerator, model: torch.nn.Module, save_dir)
         with FSDP.state_dict_type(
             unwrapped_model, StateDictType.FULL_STATE_DICT, full_state_dict_config
         ):
-            state = accelerator.get_state_dict(unwrapped_model)
+            state = get_lora_state(accelerator.get_state_dict(unwrapped_model))
             # unwrapped_model is HuggingFace AutoPretrainedModel, so we can use save_pretrained() to save the checkpoint
             unwrapped_model.save_pretrained(
                 save_dir,
@@ -61,7 +72,7 @@ def checkpoint_model(accelerator: Accelerator, model: torch.nn.Module, save_dir)
             save_dir,
             is_main_process=accelerator.is_main_process,
             save_function=accelerator.save,
-            state_dict=accelerator.get_state_dict(model),
+            state_dict=get_lora_state(accelerator.get_state_dict(unwrapped_model)),
         )
 
 
