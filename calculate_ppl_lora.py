@@ -76,7 +76,8 @@ def merge_list(input_list):
     return out
 
 
-def evaluate_lm_step(model: torch.nn.Module, batch):
+def evaluate_lm_step(model: torch.nn.Module, batch, device):
+    batch = batch.to(device)
     input_ids = batch["input_ids"]
     attention_mask = batch["attention_mask"]
     with torch.no_grad():
@@ -97,13 +98,13 @@ def evaluate_lm_step(model: torch.nn.Module, batch):
     return ppl_step
 
 
-def evaluate(model, task, eval_dataloader):
+def evaluate(model, task, eval_dataloader, device):
     model.eval()
     step_results = []
     for step, batch in enumerate(eval_dataloader):
         match task:
             case "lm" | "language_modeling":
-                ppl_step = evaluate_lm_step(model, batch)
+                ppl_step = evaluate_lm_step(model, batch, device)
                 step_results += ppl_step.tolist()
             case _:
                 raise ValueError(f"Unsupported task: {task}")
@@ -166,11 +167,11 @@ data_module = MyDataModule(
     workers=1,
     tokenizer=tokenizer,
     max_token_len=128,
-).to(device)
+)
 data_module.prepare_data()
 data_module.setup()
 eval_dataloader = data_module.val_dataloader()
-eval_results = evaluate(peft_model, 'lm', eval_dataloader)
+eval_results = evaluate(peft_model, 'lm', eval_dataloader, device)
 
 print("mase's eval_ppl: ", eval_results)
 # LoRA model (latest)
