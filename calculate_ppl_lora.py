@@ -18,6 +18,22 @@ import torch
 from tqdm import tqdm
 
 
+def get_lora_state_from_pretrained(model_to_load, peft_config, num_layers=12):
+    """Only works for model of class LlamaForCausalLM from modeling_llama_llora"""
+    lora_params_model = LlamaForCausalLM.from_pretrained(
+    pretrained_model_name_or_path=model_to_load, config=peft_config
+    )
+    state_dict = lora_params_model.state_dict()
+    state = dict()
+    for layer_id in range(num_layers):
+        for head in ["q", "v"]:
+            for lora_mat in ["A", "B"]:
+                layer = f'model.layers.{layer_id}.self_attn.{head}_proj.lora_{lora_mat}.eng_alpaca.weight'
+                state[layer] = state_dict[layer]
+
+    return state
+
+
 def calculate_ppl(input_model, encodings, stride=512, max_length=2048):
     seq_len = encodings.numel()
 
@@ -87,11 +103,8 @@ peft_config = LlamaLoraConfig.from_pretrained(
 peft_model = LlamaForCausalLM.from_pretrained(
     pretrained_model_name_or_path=model_name, config=peft_config
 )
-lora_params_model = LlamaForCausalLM.from_pretrained(
-    pretrained_model_name_or_path=model_to_load, config=peft_config
-)
 
-peft_model.load_state_dict(lora_params_model.state_dict(), strict=False)
+peft_model.load_state_dict(get_lora_state_from_pretrained(model_to_load, peft_config), strict=False)
 peft_mdoel = peft_model.to(device)
 
 # Prepare & encode data
