@@ -19,7 +19,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" PyTorch LLaMA model."""
+""" PyTorch LLaMA-LoRA model."""
 
 import math
 from typing import List, Optional, Tuple, Union
@@ -218,6 +218,7 @@ class LlamaAttention(nn.Module):
     def __init__(self, config: LlamaLoraConfig, layer_id: int = 0):
         super().__init__()
         self.config = config
+        self.layer_id = layer_id
         self.hidden_size = config.hidden_size
         self.num_heads = config.num_attention_heads
         self.head_dim = self.hidden_size // self.num_heads
