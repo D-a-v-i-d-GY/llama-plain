@@ -118,8 +118,6 @@ def evaluate(model, task, eval_dataloader):
     return eval_results
 
 
-
-
 device = 'cuda'
 max_length = 1024
 model_name = "Cheng98/llama-160m"
@@ -169,6 +167,8 @@ data_module = MyDataModule(
     tokenizer=tokenizer,
     max_token_len=128,
 )
+data_module.prepare_data()
+data_module.setup()
 eval_dataloader = data_module.val_dataloader()
 eval_results = evaluate(peft_model, 'lm', eval_dataloader)
 
