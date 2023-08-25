@@ -73,6 +73,7 @@ def main():
     )
     model = get_peft_model(model, peft_config)
 
+    model = mark_only_lora_as_trainable(model)
     print_trainable_parameters(model)
     tokenizer = LlamaTokenizer.from_pretrained(model_name)
 

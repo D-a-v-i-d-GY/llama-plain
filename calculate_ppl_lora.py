@@ -128,6 +128,9 @@ peft_model = get_peft_model(model, lora_config).to(device)
 print_trainable_parameters(model)
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
+lora_B_layer = peft_model.state_dict()['base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight']
+print(lora_B_layer)
+print(torch.where(lora_B_layer != torch.zeros_like(lora_B_layer)))
 
 # Prepare & encode data
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
