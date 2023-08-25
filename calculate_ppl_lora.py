@@ -76,8 +76,9 @@ def group_ppl_calc(model, group_idxx):
     return ppl_out
 
 
+device = 'cuda'
+max_length = 1024
 model_name = "Cheng98/llama-160m"
-# model_name = "lmsys/vicuna-7b-v1.3"
 # lora_config_path = parse_arguments() --> The following is used to pass a .toml file throught the CLI e.g --lora-config-path machop/configs/by_model/llama_lora/lora_by_type.toml
 config_files = [
     "lora_by_type.toml",
@@ -121,14 +122,12 @@ lora_config = LoraConfig.from_pretrained(lora_model_id)
 
 model = LlamaForCausalLM.from_pretrained(
     pretrained_model_name_or_path=model_name, # config=peft_config
-)
-peft_model = get_peft_model(model, lora_config)
+).to(device)
+peft_model = get_peft_model(model, lora_config).to(device)
 
 print_trainable_parameters(model)
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
-device = 'cuda'
-max_length = 1024
 
 # Prepare & encode data
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
