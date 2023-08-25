@@ -4,7 +4,7 @@ from transformers.models.llama.tokenization_llama import LlamaTokenizer
 import torch
 import os
 from tqdm import tqdm
-from peft import get_peft_model, LoraConfig
+from peft import get_peft_model, LoraConfig, PeftModel
 import modeling_llama_mqa
 import modeling_llama_gqa
 from architecture_transform_util import mha2mqa, mha2gqa
@@ -92,10 +92,10 @@ model = LlamaForCausalLM.from_pretrained(model_name).to(device)
 index = len(os.listdir("lora_models/"))
 lora_model_id = f"lora_models/plain-lora-{index - 1}"
 print(f"Loading {lora_model_id}")
-lora_config = LoraConfig.from_pretrained(lora_model_id)
-peft_model = get_peft_model(model, lora_config).to(device)
+#lora_config = LoraConfig.from_pretrained(lora_model_id)
+peft_model = PeftModel(model, lora_model_id).to(device)
 
-peft_model = peft_model.merge_and_unload()
+#peft_model = peft_model.merge_and_unload()
 
 # Define groups, very rough implementation #NEEDS IMPROVEMENT
 group_idx0 = [[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]] * 12
@@ -116,12 +116,12 @@ group_idxx = [group_idx0, group_idx1, group_idx2, group_idx3, group_idx4, group_
 
 with torch.inference_mode():
  #   model_random.eval()
-    model.eval()
+#    model.eval()
     peft_model.eval()
 #    mqa_model.eval()
 #    mqa_model_random.eval()
 
-    ppl = calculate_ppl(model, encodings, max_length=max_length)
+#    ppl = calculate_ppl(model, encodings, max_length=max_length)
     ppl_peft = calculate_ppl(peft_model, encodings, max_length=max_length)
  #   ppl_random = calculate_ppl(model_random, encodings, max_length=max_length)
 #    ppl_mqa = calculate_ppl(mqa_model, encodings, max_length=max_length)
@@ -130,7 +130,7 @@ with torch.inference_mode():
     
 # group_ppl = group_ppl_calc(group_idxx)
 
-print("base: ", ppl)
+#print("base: ", ppl)
 print("base model, LoRA tuned: ", ppl_peft)
 #print("base model, random weights: ", ppl_random)
 #print("MHA -> MQA, transformed weights: ", ppl_mqa)
