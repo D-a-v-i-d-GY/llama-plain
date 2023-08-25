@@ -115,8 +115,8 @@ for config_file in config_files:
 #)
 #peft_config.task_type = TaskType.CAUSAL_LM
 
-index = len(os.listdir("ckpts-lora-plain/"))
-lora_model_id = f"ckpts-lora-plain/{index - 1}"
+index = len(os.listdir("ckpts-llama-lora-plain/"))
+lora_model_id = f"ckpts-llama-lora-plain/{index - 1}"
 print(f"Loading {lora_model_id}")
 lora_config = LoraConfig.from_pretrained(lora_model_id)
 
