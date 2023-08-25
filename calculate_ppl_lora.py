@@ -104,7 +104,7 @@ peft_config = LlamaLoraConfig.from_pretrained(
 )
 peft_model = LlamaForCausalLM.from_pretrained(
     pretrained_model_name_or_path=f"ckpts-llama-lora-plain/{index - 1}", config=peft_config
-)
+).to(device)
 
 print_trainable_parameters(peft_model)
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
