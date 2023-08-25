@@ -65,6 +65,7 @@ def main():
     target_modules=["q_proj", "v_proj"],
     lora_dropout=0.1,
     bias="none",
+    task_type=TaskType.CAUSAL_LM
     )
 
     model = LlamaForCausalLM.from_pretrained(
