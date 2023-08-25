@@ -12,8 +12,8 @@ def main():
     # Model Parameters
     model_name = "Cheng98/llama-160m"
     batch_size = 4
-    max_epochs: int = 3
-    max_steps: int = -1
+    max_epochs: int = 1
+    max_steps: int = 100
     r = 8
     lora_alpha = 8
     gradient_accumulation_steps: int = 4
@@ -44,15 +44,15 @@ def main():
         task_type="CAUSAL_LM",
     )
 
-    model = get_peft_model(model, peft_config)
-    model.print_trainable_parameters()
+    peft_model = get_peft_model(model, peft_config)
+    peft_model.print_trainable_parameters()
 
     # Dataset
     train_data = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
     train_data_enc = train_data.map(lambda x: tokenizer(x["text"]), batched=True)
 
     trainer = transformers.Trainer(
-        model=model,
+        model=peft_model,
         tokenizer=tokenizer,
         train_dataset=train_data_enc,
         args=transformers.TrainingArguments(
@@ -70,7 +70,7 @@ def main():
     )
 
 
-    model.config.use_cache=False
+    peft_model.config.use_cache=False
     trainer.train()
 
     index = len(os.listdir("lora_models/"))
