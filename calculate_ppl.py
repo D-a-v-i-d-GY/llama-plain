@@ -92,8 +92,8 @@ model = LlamaForCausalLM.from_pretrained(model_name).to(device)
 index = len(os.listdir("lora_models/"))
 lora_model_id = f"lora_models/plain-lora-{index - 1}"
 print(f"Loading {lora_model_id}")
-#lora_config = LoraConfig.from_pretrained(lora_model_id)
-peft_model = PeftModel(model, lora_model_id).to(device)
+lora_config = LoraConfig.from_pretrained(lora_model_id)
+peft_model = PeftModel(model, lora_config).to(device)
 
 #peft_model = peft_model.merge_and_unload()
 
