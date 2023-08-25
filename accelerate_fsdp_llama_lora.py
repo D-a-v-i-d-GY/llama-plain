@@ -88,7 +88,7 @@ def main():
         save_path=save_path,
         load_name=load_name,
         load_type=load_type,
-        evaluate_before_training=evaluate_before_training,
+#        evaluate_before_training=evaluate_before_training,
     )
 
 
