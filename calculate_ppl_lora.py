@@ -92,9 +92,7 @@ lora_params_model = LlamaForCausalLM.from_pretrained(
 )
 
 peft_model.load_state_dict(lora_params_model.state_dict(), strict=False)
-
-print_trainable_parameters(peft_model)
-tokenizer = LlamaTokenizer.from_pretrained(model_name)
+peft_mdoel = peft_model.to(device)
 
 # Prepare & encode data
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
