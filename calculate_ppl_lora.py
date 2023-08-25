@@ -166,7 +166,7 @@ data_module = MyDataModule(
     workers=1,
     tokenizer=tokenizer,
     max_token_len=128,
-)
+).to(device)
 data_module.prepare_data()
 data_module.setup()
 eval_dataloader = data_module.val_dataloader()
