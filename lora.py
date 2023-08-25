@@ -77,7 +77,6 @@ def main():
     model_id = f"lora_models/plain-lora-{index}"
 
     model_to_save = trainer.model.module if hasattr(trainer.model, "module") else trainer.model
-    print(model_to_save)
     model_to_save.save_pretrained(model_id, save_adapter=True, save_config=True)
 
     #model.save_pretrained(model_id)

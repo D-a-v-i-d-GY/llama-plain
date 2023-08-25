@@ -95,7 +95,8 @@ print(f"Loading {lora_model_id}")
 lora_config = LoraConfig.from_pretrained(lora_model_id)
 peft_model = get_peft_model(model, lora_config).to(device)
 
-print(peft_model.state_dict()['base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight'])
+lora_B_layer = peft_model.state_dict()['base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight']
+print(torch.where(lora_B_layer == torch.zeros_like(lora_B_layer)))
 print(lora_config)
 
 # Define groups, very rough implementation #NEEDS IMPROVEMENT
