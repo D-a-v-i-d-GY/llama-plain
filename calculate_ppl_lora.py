@@ -106,10 +106,10 @@ for config_file in config_files:
 
 
 peft_config = LlamaLoraConfig.from_pretrained(
-    pretrained_model_name_or_path=f"ckpts-llama-lora-plain/{index}", lora_config=lora_config_path
+    pretrained_model_name_or_path=f"ckpts-llama-lora-plain/{index - 1}", lora_config=lora_config_path
 )
 peft_model = LlamaForCausalLM.from_pretrained(
-    pretrained_model_name_or_path=f"ckpts-llama-lora-plain/{index}", config=peft_config
+    pretrained_model_name_or_path=f"ckpts-llama-lora-plain/{index - 1}", config=peft_config
 )
 
 print_trainable_parameters(peft_model)
