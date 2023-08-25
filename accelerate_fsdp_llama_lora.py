@@ -32,8 +32,8 @@ def main():
     batch_size = 4
     num_workers = os.cpu_count()
     optimizer = "adamw"
-    max_epochs: int = 1
-    max_steps: int = 100
+    max_epochs: int = 5
+    max_steps: int = -1
     gradient_accumulation_steps: int = 4
     # Reduced for unit test
     # max_epochs: int = 2
