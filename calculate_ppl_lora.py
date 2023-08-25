@@ -70,9 +70,10 @@ config_files = [
 #    pretrained_model_name_or_path=model_name, lora_config=lora_config_path
 #)
 #peft_config.task_type = TaskType.CAUSAL_LM
-
-index = len(os.listdir("ckpts-llama-lora-plain/"))
-model_to_load = f"ckpts-llama-lora-plain/{index - 1}"
+index = input("Index of the lora param file: ")
+if index == -1:
+    index = len(os.listdir("ckpts-llama-lora-plain/")) - 1
+model_to_load = f"ckpts-llama-lora-plain/{index}"
 for config_file in config_files:
     # load toml config file
     with open(config_file, "r") as f:
