@@ -77,9 +77,8 @@ def merge_list(input_list):
 
 
 def evaluate_lm_step(model: torch.nn.Module, batch, device):
-    batch = batch.to(device)
-    input_ids = batch["input_ids"]
-    attention_mask = batch["attention_mask"]
+    input_ids = batch["input_ids"].to(device)
+    attention_mask = batch["attention_mask"].to(device)
     with torch.no_grad():
         outputs = model(input_ids=input_ids, attention_mask=attention_mask)
     logits = outputs.logits
