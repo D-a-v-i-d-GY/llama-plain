@@ -95,6 +95,9 @@ print(f"Loading {lora_model_id}")
 lora_config = LoraConfig.from_pretrained(lora_model_id)
 peft_model = get_peft_model(model, lora_config).to(device)
 
+print(peft_model)
+print(lora_config)
+
 # Define groups, very rough implementation #NEEDS IMPROVEMENT
 group_idx0 = [[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]] * 12
 group_idx1 = [[[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11]]] * 12
