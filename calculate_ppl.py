@@ -95,7 +95,7 @@ print(f"Loading {lora_model_id}")
 lora_config = LoraConfig.from_pretrained(lora_model_id)
 peft_model = get_peft_model(model, lora_config).to(device)
 
-print(peft_model.state_dict()["model.layers.0.self_attn.v_proj.weight"])
+print(peft_model.state_dict().keys())
 print(lora_config)
 
 # Define groups, very rough implementation #NEEDS IMPROVEMENT
