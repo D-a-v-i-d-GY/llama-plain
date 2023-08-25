@@ -29,7 +29,7 @@ def get_lora_state(state_dict, num_layers=12):
     """Only works for model of class LlamaForCausalLM from modeling_llama_llora"""
     state = dict()
     for layer_id in range(num_layers):
-        for head in ["q", "v"]:
+        for head in ["q", "k", "v", "o"]:
             for lora_mat in ["A", "B"]:
                 layer = f'model.layers.{layer_id}.self_attn.{head}_proj.lora_{lora_mat}.eng_alpaca.weight'
                 state[layer] = state_dict[layer]
