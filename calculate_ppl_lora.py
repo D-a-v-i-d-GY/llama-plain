@@ -16,6 +16,7 @@ import toml
 from datasets import load_dataset
 import torch
 from tqdm import tqdm
+import numpy as np
 
 
 def get_lora_state_from_pretrained(model_to_load, peft_config, num_layers=12):
@@ -34,7 +35,8 @@ def get_lora_state_from_pretrained(model_to_load, peft_config, num_layers=12):
     return state
 
 
-def calculate_ppl(input_model, encodings, stride=512, max_length=2048):
+# Implementation is questionable
+def calculate_ppl(input_model, encodings, stride=512, max_length=1024):
     seq_len = encodings.numel()
 
     nlls = []
@@ -72,6 +74,50 @@ def merge_list(input_list):
         out += sublist
 
     return out
+
+
+def evaluate_lm_step(model: torch.nn.Module, batch):
+    input_ids = batch["input_ids"]
+    attention_mask = batch["attention_mask"]
+    with torch.no_grad():
+        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+    logits = outputs.logits
+    shift_logits = logits[..., :-1, :].contiguous()
+    shift_labels = input_ids[..., 1:].contiguous()
+    shift_attention_mask = attention_mask[..., 1:].contiguous()
+
+    # HF's evaluate perplexity: https://huggingface.co/spaces/evaluate-metric/perplexity/blob/main/perplexity.py
+    loss_fct = torch.nn.CrossEntropyLoss(reduction="none")
+    ppl_step = torch.exp(
+        (
+            loss_fct(shift_logits.transpose(1, 2), shift_labels) * shift_attention_mask
+        ).sum(1)
+        / shift_attention_mask.sum(1)
+    )
+    return ppl_step
+
+
+def evaluate(model, task, eval_dataloader):
+    model.eval()
+    step_results = []
+    for step, batch in enumerate(eval_dataloader):
+        match task:
+            case "lm" | "language_modeling":
+                ppl_step = evaluate_lm_step(model, batch)
+                step_results += ppl_step.tolist()
+            case _:
+                raise ValueError(f"Unsupported task: {task}")
+
+    match task:
+        case "lm" | "language_modeling":
+            ppl = np.mean(step_results)
+            eval_results = {"eval_ppl": ppl}
+        case _:
+            raise ValueError(f"Unsupported task: {task}")
+
+    return eval_results
+
+
 
 
 device = 'cuda'
@@ -115,6 +161,18 @@ encodings = merge_list(encodings["input_ids"])
 encodings = merge_list(encodings)
 encodings = torch.tensor(encodings).reshape(1, -1).to(device)
 
+data_module = MyDataModule(
+    model_name=None,
+    dataset_name="wikitext2",
+    batch_size=1,
+    workers=1,
+    tokenizer=tokenizer,
+    max_token_len=128,
+)
+eval_dataloader = data_module.val_dataloader()
+eval_results = evaluate(peft_model, 'lm', eval_dataloader)
+
+print("mase's eval_ppl: ", eval_results)
 # LoRA model (latest)
 #model = LlamaForCausalLM.from_pretrained(model_name).to(device)
 #index = len(os.listdir("lora_models/"))
