@@ -116,14 +116,14 @@ def mha2gqa_lora(state_dict, groups_idx, num_heads, transpose_layer=True):
     
     num_layers = len(groups_idx)
     for layer_id in range(num_layers):
-            for head in ["q", "k", "v", "o"]:
-                for lora_mat in ["B"]: # NOTE only B needs to be changed
-                    layer_name = f'model.layers.{layer_id}.self_attn.{head}_proj.lora_{lora_mat}.eng_alpaca.weight'
-                    layer = state_dict[layer_name]
-                    if transpose_layer: layer = layer.transpose(0, 1)
-                    layer = torch.stack(torch.tensor_split(layer, num_heads, dim=1), dim=0)
-                    layer = torch.cat([torch.mean(layer[group, :, :], dim=0) for group in groups_idx[layer_id]], dim=1) # [768, 64 * num_groups]
-                    state_dict[layer_name] = layer.transpose(0, 1) # [64 * num_groups, 768]
+        for head in ["k", "v"]:
+            for lora_mat in ["B"]: # NOTE only B needs to be changed
+                layer_name = f'model.layers.{layer_id}.self_attn.{head}_proj.lora_{lora_mat}.eng_alpaca.weight'
+                layer = state_dict[layer_name]
+                if transpose_layer: layer = layer.transpose(0, 1)
+                layer = torch.stack(torch.tensor_split(layer, num_heads, dim=1), dim=0)
+                layer = torch.cat([torch.mean(layer[group, :, :], dim=0) for group in groups_idx[layer_id]], dim=1) # [768, 64 * num_groups]
+                state_dict[layer_name] = layer.transpose(0, 1) # [64 * num_groups, 768]
 
     for layer_id in range(num_layers):
         layer_name = f'model.layers.{layer_id}.self_attn.k_proj.weight' # name of the attention layer projection matrices

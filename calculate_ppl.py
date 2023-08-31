@@ -6,7 +6,7 @@ from tqdm import tqdm
 from peft import get_peft_model, LoraConfig, PeftModel
 import modeling_llama_mqa
 import modeling_llama_gqa
-from architecture_transform_util import mha2mqa, mha2gqa_lora
+from architecture_transform_util import mha2mqa, mha2gqa_lora, mha2gqa
 import os
 import modeling_llama_gqa_lora
 os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
@@ -149,7 +149,7 @@ def group_ppl_calc(model, group_idxx):
 
         # transpose_layer should always be True, TESTED
         state = model.state_dict()
-        gqa_model.load_state_dict(mha2gqa_lora(state, group_idx, num_heads=12, transpose_layer=True))
+        gqa_model.load_state_dict(mha2gqa(state, group_idx, num_heads=12, transpose_layer=True))
 
         with torch.inference_mode():
             model.eval()
@@ -231,13 +231,13 @@ print("mase's eval_ppl: ", eval_results)
 with torch.inference_mode():
  #   model_random.eval()
 #    model.eval()
-    peft_model.eval()
+#    peft_model.eval()
     gqa_model.eval()
 #    mqa_model.eval()
 #    mqa_model_random.eval()
 
 #    ppl = calculate_ppl(model, encodings, max_length=max_length)
-    ppl_peft = calculate_ppl(peft_model, encodings, max_length=max_length)
+ #   ppl_peft = calculate_ppl(peft_model, encodings, max_length=max_length)
     ppl_gqa_lora = calculate_ppl(gqa_model, encodings, max_length=max_length)
  #   ppl_random = calculate_ppl(model_random, encodings, max_length=max_length)
 #    ppl_mqa = calculate_ppl(mqa_model, encodings, max_length=max_length)
@@ -247,7 +247,7 @@ with torch.inference_mode():
 #group_ppl = group_ppl_calc(gqa_model, group_idxx)
 
 #print("base: ", ppl)
-print("base model, LoRA tuned: ", ppl_peft)
+#print("base model, LoRA tuned: ", ppl_peft)
 print("base model, LoRA tuned, converted to GQA: ", ppl_gqa_lora)
 #print("base model, random weights: ", ppl_random)
 #print("MHA -> MQA, transformed weights: ", ppl_mqa)
