@@ -6,19 +6,19 @@ import os
 
 os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
 
-import torch.nn as nn
 from accelerate_peft import train, parse_arguments
 from data_module import MyDataModule
 from lora_utils import (
-    mark_only_lora_as_trainable,
     print_trainable_parameters,
+    mark_only_lora_as_trainable
 )
+
 from configuration_llama_llora import LlamaLoraConfig
-#from modeling_llama import LlamaForCausalLM
-from transformers.models.llama.modeling_llama import LlamaForCausalLM
+import modeling_llama_llora
+import modeling_llama_gqa_lora
 from transformers.models.llama import LlamaTokenizer
 import toml
-from peft import get_peft_model, TaskType, LoraConfig
+from architecture_transform_util import mha2gqa
 
 
 def main():
@@ -31,23 +31,21 @@ def main():
     task = "lm"
     dataset_name = "wikitext2"
     max_token_len = 128
-    batch_size = 16
+    batch_size = 4
     num_workers = os.cpu_count()
     optimizer = "adamw"
-    max_epochs: int = 2
+    max_epochs: int = 5
     max_steps: int = -1
-    gradient_accumulation_steps: int = 1
-    # Reduced for unit test
-    # max_epochs: int = 2
-    # max_steps: int = -1
-    # gradient_accumulation_steps: int = 4
-    learning_rate: float = 5e-5
-    weight_decay: float = 0.01
+    gradient_accumulation_steps: int = 4
+    learning_rate: float = 5e-4
+    weight_decay: float = 0.0
     lr_scheduler_type: str = "linear"
     num_warmup_steps: int = 0
-    save_path: str = "./ckpts-lora-plain"
+    save_path: str = "./ckpts-llama-lora-plain"
     load_name: str = None
     load_type: str = ""
+
+    group_idx = [[[0, 2, 4, 6, 8, 10], [1, 3, 5, 7, 9, 11]]] * 12
 
     for config_file in config_files:
         # load toml config file
@@ -55,26 +53,20 @@ def main():
             lora_config_path = toml.load(f)
         print(f"LoRA PEFT with {config_file} config file successfully loaded!")
 
-    #peft_config = LlamaLoraConfig.from_pretrained(
-    #    pretrained_model_name_or_path=model_name, lora_config=lora_config_path
-    #)
-    #peft_config.task_type = TaskType.CAUSAL_LM
-    peft_config = LoraConfig(
-    r=4,
-    lora_alpha=8,
-    target_modules=["q_proj", "v_proj"],
-    lora_dropout=0.1,
-    bias="none",
-    task_type=TaskType.CAUSAL_LM
+    peft_config = LlamaLoraConfig.from_pretrained(
+        pretrained_model_name_or_path=model_name, lora_config=lora_config_path
     )
-
-    model = LlamaForCausalLM.from_pretrained(
-        pretrained_model_name_or_path=model_name, # config=peft_config
+    model = modeling_llama_llora.LlamaForCausalLM.from_pretrained(
+        pretrained_model_name_or_path=model_name, config=peft_config
     )
-    model = get_peft_model(model, peft_config)
+    model.config.groups_idx = group_idx
+    gqa_model = modeling_llama_gqa_lora.LlamaForCausalLM(model.config)
+    
+    state = model.state_dict()
+    gqa_model.load_state_dict(mha2gqa(state, group_idx, num_heads=12, transpose_layer=True))
 
-    model = mark_only_lora_as_trainable(model)
-    print_trainable_parameters(model)
+    gqa_model = mark_only_lora_as_trainable(gqa_model)
+    print_trainable_parameters(gqa_model)
     tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
     data_module = MyDataModule(
@@ -87,7 +79,7 @@ def main():
     )
 
     train(
-        model=model,
+        model=gqa_model,
         task=task,
         data_module=data_module,
         optimizer=optimizer,
@@ -101,12 +93,8 @@ def main():
         save_path=save_path,
         load_name=load_name,
         load_type=load_type,
+#        evaluate_before_training=evaluate_before_training,
     )
-
-    index = len(os.listdir("lora_models/"))
-    model_id = f"lora_models/plain-lora-{index}"
-
-    model.save_pretrained(model_id)
 
 
 if __name__ == "__main__":
