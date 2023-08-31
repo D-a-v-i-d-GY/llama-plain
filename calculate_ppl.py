@@ -6,7 +6,7 @@ from tqdm import tqdm
 from peft import get_peft_model, LoraConfig, PeftModel
 import modeling_llama_mqa
 import modeling_llama_gqa
-from architecture_transform_util import mha2mqa, mha2gqa
+from architecture_transform_util import mha2mqa, mha2gqa_lora
 import os
 import modeling_llama_gqa_lora
 os.environ["PYTHONBREAKPOINT"] = "ipdb.set_trace"
@@ -149,7 +149,7 @@ def group_ppl_calc(model, group_idxx):
 
         # transpose_layer should always be True, TESTED
         state = model.state_dict()
-        gqa_model.load_state_dict(mha2gqa(state, group_idx, num_heads=12, transpose_layer=True))
+        gqa_model.load_state_dict(mha2gqa_lora(state, group_idx, num_heads=12, transpose_layer=True))
 
         with torch.inference_mode():
             model.eval()
@@ -202,7 +202,7 @@ peft_model.config.groups_idx = group_idx
 gqa_model = modeling_llama_gqa_lora.LlamaForCausalLM(peft_model.config)
 
 state = peft_model.state_dict()
-gqa_model.load_state_dict(mha2gqa(state, group_idx, num_heads=12, transpose_layer=True))
+gqa_model.load_state_dict(mha2gqa_lora(state, group_idx, num_heads=12, transpose_layer=True))
 gqa_mdoel = gqa_model.to(device)
 
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
