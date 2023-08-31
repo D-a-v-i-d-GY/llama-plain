@@ -18,7 +18,7 @@ import modeling_llama_llora
 import modeling_llama_gqa_lora
 from transformers.models.llama import LlamaTokenizer
 import toml
-from architecture_transform_util import mha2gqa
+from architecture_transform_util import mha2gqa_lora
 
 
 def main():
@@ -63,7 +63,7 @@ def main():
     gqa_model = modeling_llama_gqa_lora.LlamaForCausalLM(model.config)
     
     state = model.state_dict()
-    gqa_model.load_state_dict(mha2gqa(state, group_idx, num_heads=12, transpose_layer=True))
+    gqa_model.load_state_dict(mha2gqa_lora(state, group_idx, num_heads=12, transpose_layer=True))
 
     gqa_model = mark_only_lora_as_trainable(gqa_model)
     print_trainable_parameters(gqa_model)
