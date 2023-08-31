@@ -163,7 +163,7 @@ def group_ppl_calc(model, group_idxx):
     return ppl_out
 
 
-device = 'cuda:2'
+device = 'cuda'
 model_name = "Cheng98/llama-160m"
 torch.manual_seed(420)
 max_length = 1024
