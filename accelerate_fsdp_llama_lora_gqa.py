@@ -22,6 +22,7 @@ from architecture_transform_util import mha2gqa_lora
 
 
 def main():
+    group_idx = [[[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11]]] * 12
     model_name = "Cheng98/llama-160m"
     # model_name = "lmsys/vicuna-7b-v1.3"
     # lora_config_path = parse_arguments() --> The following is used to pass a .toml file throught the CLI e.g --lora-config-path machop/configs/by_model/llama_lora/lora_by_type.toml
@@ -44,8 +45,6 @@ def main():
     save_path: str = "./ckpts-llama-lora-gqa"
     load_name: str = None
     load_type: str = ""
-
-    group_idx = [[[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11]]] * 12
 
     for config_file in config_files:
         # load toml config file
