@@ -80,12 +80,10 @@ def objective(trial):
     # Select the architecture of the gqa model based on optuna suggestion
 #    grpsz_index = trial.suggest_int("group_size_index", 0, 5)
 #    num_groups = possible_num_of_groups[grpsz_index]
-    num_groups = trial.suggest_categorical("number of groups", [1, 2, 3, 4, 6, 12])
+    num_groups = trial.suggest_categorical("number of groups", [1, 2, 3, 4, 6])
     depth = trial.suggest_int("grouping depth", 1, 12)
     rev = trial.suggest_categorical("Grouping from the back", [True, False])
     group_idx = n_uniform_groups(num_groups, 12, 12, depth=depth, reverse=rev)
-    if depth == 12 and num_groups == 12:
-        return 10e6 # ignore mha performance
     # GQA model init
     model.config.groups_idx = group_idx
     gqa_model = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
