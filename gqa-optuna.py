@@ -105,8 +105,8 @@ def objective(trial):
 #    grpsz_index = trial.suggest_int("group_size_index", 0, 5)
 #    num_groups = possible_num_of_groups[grpsz_index]
 #    num_groups = trial.suggest_categorical("number of groups", [1, 2, 3, 4, 6])
-    layer_ids = [[trial.suggest_int(f"group of {i}-th head", 0, 11) for i in range(12)]]
     depth = trial.suggest_int("grouping depth", 1, 12)
+    layer_ids = [[trial.suggest_int(f"group of {i}-th head", 0, 11) for i in range(12)]] * depth
     rev = trial.suggest_categorical("Grouping from the back", [True, False])
     group_idx = ids2group_idx(layer_ids)
     num_groups = len(group_idx[0])
