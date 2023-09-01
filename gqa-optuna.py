@@ -59,8 +59,8 @@ def evaluate(model, task, eval_dataloader, device, step_stop=-1):
 
 def n_uniform_groups(num_groups, num_heads, num_layers, depth=-1, reverse=False):
     group_size = num_heads // num_groups
-    if reverse: print(f"Reversed uniform grouping with {num_groups} groups, group size = {group_size}, and grouping layer depth = {depth}")
-    else: print(f"Uniform grouping with {num_groups} groups, group size = {group_size}, and grouping layer depth = {depth}")
+    #if reverse: print(f"Reversed uniform grouping with {num_groups} groups, group size = {group_size}, and grouping layer depth = {depth}")
+    #else: print(f"Uniform grouping with {num_groups} groups, group size = {group_size}, and grouping layer depth = {depth}")
     mha = [[[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]]]
     reverse = 1 if reverse else 0
 
@@ -82,8 +82,8 @@ def objective(trial):
 #    num_groups = possible_num_of_groups[grpsz_index]
     num_groups = trial.suggest_categorical("number of groups", [1, 2, 3, 4, 6, 12])
     depth = trial.suggest_int("grouping depth", 1, 12)
-    rev = trial.suggest_categorical("changing architecture from last layers", [True, False])
-    group_idx = n_uniform_groups(num_groups, 12, 12, depth=grouping_depth, reverse=rev)
+    rev = trial.suggest_categorical("Grouping from the back", [True, False])
+    group_idx = n_uniform_groups(num_groups, 12, 12, depth=depth, reverse=rev)
     
     # GQA model init
     model.config.groups_idx = group_idx
@@ -95,7 +95,7 @@ def objective(trial):
     eval_results = evaluate(gqa_model, 'lm', eval_dataloader, device, step_stop=num_of_evals)
     print(eval_results["eval_ppl"])
     # Evaluate the objective function based on ppl and grouping complexity
-    return math.log(eval_results["eval_ppl"]) * num_groups / math.sqrt(depth)
+    return math.sqrt(eval_results["eval_ppl"]) * num_groups ** 1.5 / depth ** 1.5 / 10
 
 
 model_name = "Cheng98/llama-160m"
