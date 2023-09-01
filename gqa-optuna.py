@@ -106,8 +106,8 @@ def objective(trial):
 #    num_groups = possible_num_of_groups[grpsz_index]
 #    num_groups = trial.suggest_categorical("number of groups", [1, 2, 3, 4, 6])
     depth = trial.suggest_int("grouping depth", 1, 12)
-    layer_ids = [[trial.suggest_int(f"group of {i}-th head", 0, 11) for i in range(12)]] * depth
     rev = trial.suggest_categorical("Grouping from the back", [True, False])
+    layer_ids = [[trial.suggest_int(f"group of {i}-th head", 0, 11) for i in range(12)]] * depth
     group_idx = ids2group_idx(layer_ids)
     num_groups = len(group_idx[0])
     group_idx = fill_group_idx(group_idx, num_heads=12, num_layers=12, reverse=rev)
@@ -153,13 +153,16 @@ num_of_evals = len(eval_dataloader.dataset) // 10
 
 # Create the optimisation study
 study = optuna.create_study(
+    sampler=optuna.samplers.CmaEsSampler(),
     storage="sqlite:///test.db",
     study_name="test-study",
     load_if_exists=True,
     direction="minimize",
 )
 
-study.optimize(objective, n_trials=10, show_progress_bar=True)
+study.optimize(objective, n_trials=50, show_progress_bar=True)
+
+optuna.visualization.plot_param_importances(study)
 
 pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
 complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
@@ -177,5 +180,3 @@ print("  Value: ", trial.value)
 print("  Params: ")
 for key, value in trial.params.items():
     print("    {}: {}".format(key, value))
-
-optuna.visualization.plot_param_importances(study)
