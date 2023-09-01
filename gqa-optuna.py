@@ -84,7 +84,8 @@ def objective(trial):
     depth = trial.suggest_int("grouping depth", 1, 12)
     rev = trial.suggest_categorical("Grouping from the back", [True, False])
     group_idx = n_uniform_groups(num_groups, 12, 12, depth=depth, reverse=rev)
-    
+    if depth == 12 and num_groups == 12:
+        return 10e6 # ignore mha performance
     # GQA model init
     model.config.groups_idx = group_idx
     gqa_model = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
@@ -95,7 +96,7 @@ def objective(trial):
     eval_results = evaluate(gqa_model, 'lm', eval_dataloader, device, step_stop=num_of_evals)
     print(eval_results["eval_ppl"])
     # Evaluate the objective function based on ppl and grouping complexity
-    return math.sqrt(eval_results["eval_ppl"]) * num_groups ** 1.5 / depth ** 1.5 / 10
+    return eval_results["eval_ppl"] * num_groups ** 1.5 / depth ** 1.5 / 10
 
 
 model_name = "Cheng98/llama-160m"
@@ -145,3 +146,5 @@ print("  Value: ", trial.value)
 print("  Params: ")
 for key, value in trial.params.items():
     print("    {}: {}".format(key, value))
+
+optuna.visualization.plot_param_importances(study)
