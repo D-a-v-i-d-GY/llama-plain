@@ -58,8 +58,8 @@ def evaluate(model, task, eval_dataloader, device, step_stop=-1):
 
 
 def n_uniform_groups(num_groups, num_heads, num_layers, depth=-1):
-    print(f"Uniform grouping with {num_groups} groups and depth of {depth}")
     group_size = num_heads // num_groups
+    print(f"Uniform grouping with {num_groups} groups, group size = {group_size}, and grouping layer depth = {depth}")
     if group_size * num_groups != num_heads:
         raise ValueError(f"number of heads: {num_heads} must be divisible by number of groups: {num_groups}")
     if depth == -1:
@@ -72,8 +72,9 @@ def n_uniform_groups(num_groups, num_heads, num_layers, depth=-1):
 def objective(trial):
 
     # Select the architecture of the gqa model based on optuna suggestion
-    grpsz_index = trial.suggest_int("group_size_index", 0, 5)
-    num_groups = possible_num_of_groups[grpsz_index]
+#    grpsz_index = trial.suggest_int("group_size_index", 0, 5)
+#    num_groups = possible_num_of_groups[grpsz_index]
+    num_groups = trial.suggest_categorical("num_groups", [1, 2, 3, 4, 6, 12])
     group_idx = n_uniform_groups(num_groups, 12, 12, depth=grouping_depth)
     
     # GQA model init
