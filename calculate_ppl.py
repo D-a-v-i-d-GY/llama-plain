@@ -178,8 +178,8 @@ encodings = get_encoded_data(eval_data, tokenizer).to(device)
 # LoRA model (latest)
 index = int(input("Index of the lora param file: "))
 if index == -1:
-    index = len(os.listdir("ckpts-llama-lora-plain/")) - 1
-model_to_load = f"ckpts-llama-lora-plain/{index}"
+    index = len(os.listdir("ckpts-llama-lora-gqa/")) - 1
+model_to_load = f"ckpts-llama-lora-gqa/{index}"
 
 for config_file in config_files:
     # load toml config file
@@ -196,7 +196,7 @@ peft_model = modeling_llama_llora.LlamaForCausalLM.from_pretrained(
     pretrained_model_name_or_path=model_name, config=peft_config
 )
 peft_model.load_state_dict(get_lora_state_from_pretrained(model_to_load, peft_config), strict=False)
-peft_mdoel = peft_model.to(device)
+#peft_mdoel = peft_model.to(device)
 
 peft_model.config.groups_idx = group_idx
 gqa_model = modeling_llama_gqa_lora.LlamaForCausalLM(peft_model.config)
