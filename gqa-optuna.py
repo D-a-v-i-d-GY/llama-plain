@@ -112,6 +112,11 @@ def objective(trial):
     num_groups = len(group_idx[0])
     group_idx = fill_group_idx(group_idx, num_heads=12, num_layers=12, reverse=rev)
 #    group_idx = n_uniform_groups(num_groups, 12, 12, depth=depth, reverse=rev)
+
+    # Print group_idx
+    for layer_groups in group_idx:
+        print(layer_groups)
+
     # GQA model init
     model.config.groups_idx = group_idx
     gqa_model = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
