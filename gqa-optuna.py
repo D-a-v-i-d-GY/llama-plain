@@ -86,7 +86,7 @@ def objective(trial):
     eval_results = evaluate(gqa_model, 'lm', eval_dataloader, device, step_stop=num_of_evals)
 
     # Evaluate the objective function based on ppl and grouping complexity
-    return math.log(eval_results) * num_groups
+    return math.log(eval_results["eval_ppl"]) * num_groups
 
 
 model_name = "Cheng98/llama-160m"
