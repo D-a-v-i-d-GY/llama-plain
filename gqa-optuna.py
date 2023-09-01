@@ -61,7 +61,7 @@ def n_uniform_groups(num_groups, num_heads, num_layers, depth=-1, reverse=False)
     group_size = num_heads // num_groups
     #if reverse: print(f"Reversed uniform grouping with {num_groups} groups, group size = {group_size}, and grouping layer depth = {depth}")
     #else: print(f"Uniform grouping with {num_groups} groups, group size = {group_size}, and grouping layer depth = {depth}")
-    mha = [[[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]]]
+    mha = [[[i] for i in range(num_heads)]]
     reverse = 1 if reverse else 0
 
     if group_size * num_groups != num_heads:
@@ -75,15 +75,43 @@ def n_uniform_groups(num_groups, num_heads, num_layers, depth=-1, reverse=False)
                 + mha * ((num_layers - depth) * (1 - reverse)))
 
 
+def ids2group_idx(ids):
+    depth = len(ids) # ids: list of size depth * num_heads
+    num_heads = 12
+    group_idx = [[] for q in range(depth)]
+    for i in range(depth):
+        layer_groups = [[] for j in range(num_heads)]
+        for j in range(num_heads):
+            layer_groups[ids[i][j]] += [j]
+        layer_groups = [group for group in layer_groups if group]
+        group_idx[i] = layer_groups
+    
+    return group_idx
+
+
+def fill_group_idx(group_idx, num_heads, num_layers, reverse=False):
+    mha = [[[i] for i in range(num_heads)]]
+    reverse = 1 if reverse else 0
+    depth = len(group_idx)
+
+    return (mha * ((num_layers - depth) * reverse)
+            + group_idx
+            + mha * ((num_layers - depth) * (1 - reverse)))
+
+
 def objective(trial):
 
     # Select the architecture of the gqa model based on optuna suggestion
 #    grpsz_index = trial.suggest_int("group_size_index", 0, 5)
 #    num_groups = possible_num_of_groups[grpsz_index]
-    num_groups = trial.suggest_categorical("number of groups", [1, 2, 3, 4, 6])
+#    num_groups = trial.suggest_categorical("number of groups", [1, 2, 3, 4, 6])
+    layer_ids = [[trial.suggest_int(f"group of {i}-th head", 0, 11) for i in range(12)]]
     depth = trial.suggest_int("grouping depth", 1, 12)
     rev = trial.suggest_categorical("Grouping from the back", [True, False])
-    group_idx = n_uniform_groups(num_groups, 12, 12, depth=depth, reverse=rev)
+    group_idx = ids2group_idx(layer_ids)
+    num_groups = len(group_idx[0])
+    group_idx = fill_group_idx(group_idx, num_heads=12, num_layers=12, reverse=rev)
+#    group_idx = n_uniform_groups(num_groups, 12, 12, depth=depth, reverse=rev)
     # GQA model init
     model.config.groups_idx = group_idx
     gqa_model = modeling_llama_gqa.LlamaForCausalLM(model.config).to(device)
@@ -94,12 +122,12 @@ def objective(trial):
     eval_results = evaluate(gqa_model, 'lm', eval_dataloader, device, step_stop=num_of_evals)
     print(eval_results["eval_ppl"])
     # Evaluate the objective function based on ppl and grouping complexity
-    return eval_results["eval_ppl"] * num_groups ** 1.5 / depth ** 1.5 / 10
+    return eval_results["eval_ppl"] * num_groups ** 0.8 / depth ** 0.8 / 10
 
 
 model_name = "Cheng98/llama-160m"
 device = "cuda"
-possible_num_of_groups = [1, 2, 3, 4, 6, 12]
+possible_num_of_groups = [1, 2, 3, 4, 6]
 grouping_depth = 1
 model = LlamaForCausalLM.from_pretrained(model_name).to(device)
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
