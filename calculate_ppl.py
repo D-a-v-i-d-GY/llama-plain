@@ -19,11 +19,16 @@ import toml
 import numpy as np
 
 
-def get_lora_state_from_pretrained(model_to_load, peft_config, num_layers=12):
-    """Only works for model of class LlamaForCausalLM from modeling_llama_llora"""
-    lora_params_model = modeling_llama_llora.LlamaForCausalLM.from_pretrained(
-    pretrained_model_name_or_path=model_to_load, config=peft_config
-    )
+def get_lora_state_from_pretrained(model_to_load, peft_config, num_layers=12, gqa=False):
+    """Only works for model of class LlamaForCausalLM from modeling_llama_llora or modeling_llama_gqa_lora"""
+    if gqa:
+        lora_params_model = modeling_llama_gqa_lora.LlamaForCausalLM.from_pretrained(
+        pretrained_model_name_or_path=model_to_load, config=peft_config
+        )
+    else:
+        lora_params_model = modeling_llama_llora.LlamaForCausalLM.from_pretrained(
+        pretrained_model_name_or_path=model_to_load, config=peft_config
+        )
     state_dict = lora_params_model.state_dict()
     state = dict()
     for layer_id in range(num_layers):
@@ -213,15 +218,16 @@ peft_config = LlamaLoraConfig.from_pretrained(
 peft_model = modeling_llama_llora.LlamaForCausalLM.from_pretrained(
     pretrained_model_name_or_path=model_name, config=peft_config
 )
-peft_model.load_state_dict(get_lora_state_from_pretrained(model_to_load, peft_config), strict=False)
+#peft_model.load_state_dict(get_lora_state_from_pretrained(model_to_load, peft_config), strict=False)
 #peft_mdoel = peft_model.to(device)
 
 peft_model.config.groups_idx = group_idx
 gqa_model = modeling_llama_gqa_lora.LlamaForCausalLM(peft_model.config)
 
 state = peft_model.state_dict()
-gqa_model.load_state_dict(mha2gqa_lora(state, group_idx, num_heads=12, transpose_layer=True))
-gqa_mdoel = gqa_model.to(device)
+gqa_model.load_state_dict(mha2gqa(state, group_idx, num_heads=12, transpose_layer=True), strict=False) # Load base weights
+gqa_model.load_state_dict(get_lora_state_from_pretrained(model_to_load, peft_config, gqa=True), strict=False) # Load LoRA weights
+gqa_model = gqa_model.to(device)
 
 tokenizer = LlamaTokenizer.from_pretrained(model_name)
 
