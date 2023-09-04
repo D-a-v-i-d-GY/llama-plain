@@ -19,6 +19,50 @@ import modeling_llama_gqa_lora
 from transformers.models.llama import LlamaTokenizer
 import toml
 from architecture_transform_util import mha2gqa_lora
+import torch
+import numpy as np
+
+
+def evaluate_lm_step(model: torch.nn.Module, batch, device):
+    input_ids = batch["input_ids"].to(device)
+    attention_mask = batch["attention_mask"].to(device)
+    with torch.no_grad():
+        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+    logits = outputs.logits
+    shift_logits = logits[..., :-1, :].contiguous()
+    shift_labels = input_ids[..., 1:].contiguous()
+    shift_attention_mask = attention_mask[..., 1:].contiguous()
+
+    # HF's evaluate perplexity: https://huggingface.co/spaces/evaluate-metric/perplexity/blob/main/perplexity.py
+    loss_fct = torch.nn.CrossEntropyLoss(reduction="none")
+    ppl_step = torch.exp(
+        (
+            loss_fct(shift_logits.transpose(1, 2), shift_labels) * shift_attention_mask
+        ).sum(1)
+        / shift_attention_mask.sum(1)
+    )
+    return ppl_step
+
+
+def evaluate(model, task, eval_dataloader, device):
+    model.eval()
+    step_results = []
+    for step, batch in enumerate(eval_dataloader):
+        match task:
+            case "lm" | "language_modeling":
+                ppl_step = evaluate_lm_step(model, batch, device)
+                step_results += ppl_step.tolist()
+            case _:
+                raise ValueError(f"Unsupported task: {task}")
+
+    match task:
+        case "lm" | "language_modeling":
+            ppl = np.mean(step_results)
+            eval_results = {"eval_ppl": ppl}
+        case _:
+            raise ValueError(f"Unsupported task: {task}")
+
+    return eval_results
 
 
 def main():
@@ -94,6 +138,14 @@ def main():
         tokenizer=tokenizer,
         max_token_len=max_token_len,
     )
+
+    device = "cuda"
+    data_module.prepare_data()
+    data_module.setup()
+    eval_dataloader = data_module.val_dataloader()
+    eval_results = evaluate(gqa_model, 'lm', eval_dataloader, device)
+
+    print("eval_ppl before fine-tuning: ", eval_results)
 
     train(
         model=gqa_model,
