@@ -153,7 +153,7 @@ num_of_evals = len(eval_dataloader.dataset) // 10
 
 # Create the optimisation study
 study = optuna.create_study(
-    sampler=optuna.samplers.CmaEsSampler(),
+    sampler=optuna.samplers.RandomSampler(),
     storage="sqlite:///test.db",
     study_name="test-study",
     load_if_exists=True,
