@@ -105,12 +105,12 @@ def objective(trial):
 #    grpsz_index = trial.suggest_int("group_size_index", 0, 5)
 #    num_groups = possible_num_of_groups[grpsz_index]
 #    num_groups = trial.suggest_categorical("number of groups", [1, 2, 3, 4, 6])
-    depth = trial.suggest_int("grouping depth", 1, 12)
-    rev = trial.suggest_categorical("Grouping from the back", [True, False])
-    layer_ids = [[trial.suggest_int(f"group of {i}-th head", 0, 11) for i in range(12)]] * depth
+#    depth = trial.suggest_int("grouping depth", 1, 12)
+#    rev = trial.suggest_categorical("Grouping from the back", [True, False])
+    layer_ids = [[trial.suggest_int(f"group of {i}-th head in {j}-th layer", 0, 11) for i in range(12)] for j in range(12)]
     group_idx = ids2group_idx(layer_ids)
-    num_groups = len(group_idx[0])
-    group_idx = fill_group_idx(group_idx, num_heads=12, num_layers=12, reverse=rev)
+    num_groups = sum([len(layer_groups) for layer_groups in group_idx])
+#    group_idx = fill_group_idx(group_idx, num_heads=12, num_layers=12)#, reverse=rev)
 #    group_idx = n_uniform_groups(num_groups, 12, 12, depth=depth, reverse=rev)
 
     # Print group_idx
@@ -127,7 +127,7 @@ def objective(trial):
     eval_results = evaluate(gqa_model, 'lm', eval_dataloader, device, step_stop=num_of_evals)
     print(eval_results["eval_ppl"])
     # Evaluate the objective function based on ppl and grouping complexity
-    return eval_results["eval_ppl"] * num_groups ** 0.8 / depth ** 0.8 / 10
+    return eval_results["eval_ppl"] * num_groups ** 0.8 
 
 
 model_name = "Cheng98/llama-160m"
