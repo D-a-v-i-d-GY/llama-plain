@@ -204,6 +204,7 @@ print(f"Loaded lora PARAMS from {model_to_load}")
 print("\nGroupings:")
 for layer_groups in group_idx:
     print(layer_groups)
+print("Number of groups: ", sum([len(layer_groups) for layer_groups in group_idx]))
 
 # Load the models
 peft_config = LlamaLoraConfig.from_pretrained(
@@ -237,7 +238,7 @@ data_module.setup()
 eval_dataloader = data_module.val_dataloader()
 eval_results = evaluate(gqa_model, 'lm', eval_dataloader, device)
 
-print("mase's eval_ppl: ", eval_results)
+print("eval_ppl: ", eval_results)
 
 #model_random = LlamaForCausalLM(model.config).to(device)
 #mqa_model = modeling_llama_mqa.LlamaForCausalLM(model.config).to(device)
