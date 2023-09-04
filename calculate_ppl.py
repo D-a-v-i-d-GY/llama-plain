@@ -225,7 +225,7 @@ peft_model.config.groups_idx = group_idx
 gqa_model = modeling_llama_gqa_lora.LlamaForCausalLM(peft_model.config)
 
 state = peft_model.state_dict()
-gqa_model.load_state_dict(mha2gqa(state, group_idx, num_heads=12, transpose_layer=True), strict=False) # Load base weights
+gqa_model.load_state_dict(mha2gqa_lora(state, group_idx, num_heads=12, transpose_layer=True), strict=False) # Load base weights
 gqa_model.load_state_dict(get_lora_state_from_pretrained(model_to_load, peft_config, gqa=True), strict=False) # Load LoRA weights
 gqa_model = gqa_model.to(device)
 
