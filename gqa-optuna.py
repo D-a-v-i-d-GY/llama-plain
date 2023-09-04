@@ -127,7 +127,7 @@ def objective(trial):
     eval_results = evaluate(gqa_model, 'lm', eval_dataloader, device, step_stop=num_of_evals)
     print(eval_results["eval_ppl"])
     # Evaluate the objective function based on ppl and grouping complexity
-    return eval_results["eval_ppl"] * num_groups ** 0.8 
+    return eval_results["eval_ppl"] * num_groups ** 2 / 144
 
 
 model_name = "Cheng98/llama-160m"
@@ -160,7 +160,7 @@ study = optuna.create_study(
     direction="minimize",
 )
 
-study.optimize(objective, n_trials=50, show_progress_bar=True)
+study.optimize(objective, n_trials=150, show_progress_bar=True)
 
 optuna.visualization.plot_param_importances(study)
 
