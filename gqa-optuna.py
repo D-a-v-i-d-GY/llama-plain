@@ -114,6 +114,7 @@ def objective(trial):
 #    group_idx = n_uniform_groups(num_groups, 12, 12, depth=depth, reverse=rev)
 
     # Print group_idx
+    print("\n\n")
     for layer_groups in group_idx:
         print(layer_groups)
 
@@ -125,7 +126,7 @@ def objective(trial):
     
     # Calculate the ppl, don't go thruo the whole dataset
     eval_results = evaluate(gqa_model, 'lm', eval_dataloader, device, step_stop=num_of_evals)
-    print(eval_results["eval_ppl"])
+    print("ppl: ", eval_results["eval_ppl"], "\t\tnum_groups: ", num_groups)
     # Evaluate the objective function based on ppl and grouping complexity
     return eval_results["eval_ppl"] * num_groups ** 2 / 144
 
