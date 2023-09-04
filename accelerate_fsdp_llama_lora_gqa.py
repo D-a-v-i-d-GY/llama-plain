@@ -68,6 +68,7 @@ def main():
     print("\nGroupings:")
     for layer_groups in group_idx:
         print(layer_groups)
+    print("Number of groups: ", sum([len(layer_groups) for layer_groups in group_idx]))
 
     peft_config = LlamaLoraConfig.from_pretrained(
         pretrained_model_name_or_path=model_name, lora_config=lora_config_path
