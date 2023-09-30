@@ -29,7 +29,14 @@ A lot of the code was borrowed from mase-tools (Machine-Learning Accelerator Sys
 The files listed above are the ones you would usually execute. All the other files are used within these, or not used at all.
 
 # State of the project upon finishing the internship
-After implementing the flexible/asymmetric grouping of attention heads, next step was identifying similar heads to group. Initially random grouping was decided to be used. `gqa_optuna.py` was the latest piece of code I was working on. It would use optuna library to find overall grouping that would minimize an objective function `ppl * tot_num_of_groups ** 2`. The optimal groupings would be then studied to find if there are certain heads that if grouped produce relatively better results. Best result: after finding an optimal groupings with about 100 total groups (i.e. 2/3 of the original size), the model was fine-tuned with LoRA for 5 epochs on Wikitext2, the ppl value of this model was 26.2, while the original model had ppl value of 20.6 after similar fine-tuning.
+After implementing the flexible/asymmetric grouping of attention heads, next step was identifying similar heads to group. Initially random grouping was decided to be used. `gqa_optuna.py` was the latest piece of code that I have working on. It would use optuna library to find overall grouping that would minimize an objective function `ppl * tot_num_of_groups ** 2`. The optimal groupings would be then studied to find if there are certain heads that if grouped produce relatively better results. Best result: after finding an optimal groupings with about 100 total groups (i.e. 2/3 of the original size), the model was fine-tuned with LoRA for 5 epochs on Wikitext2, the ppl value of this model was 26.2, while the original model had ppl value of 20.6 after similar fine-tuning.
 
-# Next steps, issues, etc.
-...
+# Current issues, next steps 
+##### Current issues:
+- `gqa_optuna.py` does not cover the entire search space, that's the shortcoming of the way I formed the groupings, most of the produced architectures have between 80 and 100 groups,
+- implementation of asymmetric GQA model architecture does not provide the memory savings it should, this is because of its high level implementation.
+
+##### The further steps are:
+- address the issues,
+- study the similarities between heads using different method, potentially come up with a metric that assigns a similarity value for given two heads,
+- test the final code on different models.
